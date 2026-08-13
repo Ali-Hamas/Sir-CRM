@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-hover: 221.2 83.2% 47%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 4.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 4.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-hover: 217.2 91.2% 53%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 240 3.7% 12%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 12.5%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 14%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 45.9%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: light dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom subtle scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300/60 dark:bg-zinc-800 rounded-full hover:bg-gray-400 dark:hover:bg-zinc-700 transition-colors;
+  }
+
+  /* Select & Option styling to prevent contrast bugs */
+  select {
+    @apply bg-white text-gray-900 dark:bg-zinc-950 dark:text-zinc-100;
+  }
+
+  select option {
+    background-color: #ffffff !important;
+    color: #09090b !important;
+  }
+
+  .dark select option,
+  [class*="dark"] select option {
+    background-color: #18181b !important;
+    color: #f4f4f5 !important;
+  }
+}
+
+@layer utilities {
+  /* Utility classes for enterprise cards & panels */
+  .glass-card {
+    @apply bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-gray-200/80 dark:border-zinc-800/80 shadow-sm hover:shadow-md transition-all duration-200;
+  }
+
+  .glass-header {
+    @apply bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-200/80 dark:border-zinc-800/80;
+  }
+
+  .badge-soft {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold tracking-tight transition-colors;
+  }
+
+  .btn-base {
+    @apply inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
+  }
+
+  /* Enterprise UI Primitives */
+  .table-row-hover {
+    @apply hover:bg-gray-50/80 dark:hover:bg-zinc-800/50 transition-colors duration-150;
+  }
+
+  .card-gradient-subtle {
+    @apply bg-gradient-to-br from-white via-gray-50/50 to-gray-100/30 dark:from-zinc-900 dark:via-zinc-900/80 dark:to-zinc-950/50 border border-gray-200/80 dark:border-zinc-800/80 shadow-xs;
+  }
+
+  .skeleton-pulse {
+    @apply bg-gray-200/80 dark:bg-zinc-800 animate-pulse rounded-md;
+  }
+
+  .enterprise-input {
+    @apply w-full px-3.5 py-2 rounded-xl bg-gray-50/80 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-150;
+  }
+
+  .glass-card-premium {
+    @apply bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border border-gray-200/70 dark:border-zinc-800/80 shadow-md hover:shadow-xl hover:border-primary/30 transition-all duration-300 rounded-2xl;
+  }
+
+  .glow-indigo {
+    @apply shadow-[0_0_20px_-3px_rgba(99,102,241,0.25)];
+  }
+
+  .glow-purple {
+    @apply shadow-[0_0_20px_-3px_rgba(168,85,247,0.25)];
+  }
+
+  .glow-blue {
+    @apply shadow-[0_0_20px_-3px_rgba(59,130,246,0.25)];
+  }
+
+  .glow-border-2026 {
+    position: relative;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.35));
+    padding: 1px;
+    border-radius: 1.5rem;
+  }
+}

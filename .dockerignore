@@ -1,0 +1,28 @@
+# Dependencies and builds
+node_modules
+.next
+dist
+build
+out
+.turbo
+
+# Local environment and log files
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git and IDE files
+.git
+.gitignore
+.vscode
+.idea
+
+# Temporary files and uploads
+temp_query*.js
+cookies*.txt
+text.file.txt
+body.json
+uploads/*
+!uploads/.gitkeep

@@ -1,0 +1,3768 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid()) @map("_id")
+  email             String    @unique
+  passwordHash      String
+  firstName         String?
+  lastName          String?
+  phone             String?
+  profilePictureUrl String?
+  role              String    @default("CLIENT")
+  isEmailVerified   Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  lastLogin         DateTime?
+  dateJoined        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  refreshTokens     RefreshToken[]
+  verificationTokens VerificationToken[]
+  
+  organizationMembers OrganizationMember[]
+  workspaceMembers    WorkspaceMember[]
+  teamMembers         TeamMember[]
+  userActivities      UserActivity[]
+  notifications       Notification[]
+  notificationPrefs   NotificationPreference[]
+  departmentHeads     Department[] @relation("DepartmentHead")
+  teamLeaders         Team[]       @relation("TeamLeader")
+  companyAssigned     Company[]    @relation("CompanyAssignedTo")
+  companyCreated      Company[]    @relation("CompanyCreatedBy")
+  companyNotesCreated CompanyNote[] @relation("CompanyNoteCreatedBy")
+  companyActivities   CompanyActivity[]
+  contactAssigned     Contact[]    @relation("ContactAssignedTo")
+  contactCreated      Contact[]    @relation("ContactCreatedBy")
+  contactNotesCreated ContactNote[] @relation("ContactNoteCreatedBy")
+  contactActivities   ContactActivity[]
+  leadAssigned        Lead[]        @relation("LeadAssignedTo")
+  leadCreated         Lead[]        @relation("LeadCreatedBy")
+  leadNotesCreated    LeadNote[]    @relation("LeadNoteCreatedBy")
+  leadActivities      LeadActivity[]
+  opportunityAssigned Opportunity[]  @relation("OpportunityAssignedTo")
+  opportunityCreated  Opportunity[]  @relation("OpportunityCreatedBy")
+  opportunityNotesCreated OpportunityNote[] @relation("OpportunityNoteCreatedBy")
+  opportunityActivities  OpportunityActivity[]
+  meetingCreated         Meeting[]        @relation("MeetingCreatedBy")
+  meetingNotesCreated    MeetingNote[]    @relation("MeetingNoteCreatedBy")
+  meetingActionItems     MeetingActionItem[] @relation("MeetingActionItemOwner")
+  meetingParticipations  MeetingParticipant[]
+  proposalCreated        Proposal[]       @relation("ProposalCreatedBy")
+  proposalOwner          Proposal[]       @relation("ProposalOwner")
+  proposalApprovals      ProposalApprovalLog[] @relation("ProposalApprovals")
+  proposalActivities     ProposalActivity[] @relation("ProposalActivities")
+  contractCreated        Contract[]       @relation("ContractCreatedBy")
+  contractOwner          Contract[]       @relation("ContractOwner")
+  contractApprovalLogs   ContractApproval[] @relation("ContractApprovalLogs")
+  contractActivities     ContractActivity[]
+  folders             Folder[]
+  documents           Document[]
+  documentComments    DocumentComment[]
+  favoriteDocuments   FavoriteDocument[]
+  projectManaged      Project[]        @relation("ProjectManager")
+  projectCreated      Project[]        @relation("ProjectCreatedBy")
+  projectActivities   ProjectActivity[]
+  projectMembers      ProjectMember[]
+  taskReported        Task[]           @relation("TaskReporter")
+  taskCreated         Task[]           @relation("TaskCreatedBy")
+  taskComments        TaskComment[]
+  taskAttachments     TaskAttachment[]
+  taskAssignments     TaskAssignee[]
+  timeEntries         TimeEntry[]          @relation("TimeEntryUser")
+  timeEntriesCreated  TimeEntry[]          @relation("TimeEntryCreator")
+  resourceAllocations ResourceAllocation[] @relation("ResourceAllocationUser")
+  resourceAllocationsCreated ResourceAllocation[] @relation("ResourceAllocationCreator")
+  workSchedules       WorkSchedule[]
+  knowledgeArticles   KnowledgeArticle[]
+  knowledgeRevisions  KnowledgeRevision[]
+  knowledgeComments   KnowledgeComment[]
+  knowledgeFavorites  KnowledgeFavorite[]
+  knowledgeAttachments KnowledgeAttachment[]
+  recentSearches      RecentSearch[]
+  workflowsCreated    Workflow[]          @relation("WorkflowCreatedBy")
+  workflowsUpdated    Workflow[]          @relation("WorkflowUpdatedBy")
+  workflowExecutions  WorkflowExecution[]
+  aiProvidersCreated  AIProvider[]        @relation("AIProviderCreatedBy")
+  aiProvidersUpdated  AIProvider[]        @relation("AIProviderUpdatedBy")
+  promptsCreated      PromptTemplate[]    @relation("PromptCreatedBy")
+  promptsUpdated      PromptTemplate[]    @relation("PromptUpdatedBy")
+  promptVersionsCreated PromptVersion[]   @relation("PromptVersionCreatedBy")
+  promptExecutionLogs PromptExecutionLog[]
+  aiConversations     AIConversation[]
+  aiConversationFolders AIConversationFolder[]
+  aiConversationShares AIConversationShare[]
+  aiConversationPins  AIConversationPin[]
+  aiMemories          AIMemory[]
+  aiUserPreferences   AIUserPreference[]
+  aiAssistantsCreated   AIAssistant[]          @relation("AIAssistantCreatedBy")
+  aiAssistantsUpdated   AIAssistant[]          @relation("AIAssistantUpdatedBy")
+  aiAssistantSessions   AIAssistantSession[]
+  aiAssistantExecutions AIAssistantExecution[]
+  aiToolExecutions      AIToolExecution[]
+  ragSearches           RAGSearch[]
+  aiAgentsCreated       AIAgent[]              @relation("AIAgentCreatedBy")
+  aiAgentsUpdated       AIAgent[]              @relation("AIAgentUpdatedBy")
+  aiAgentExecutions     AIAgentExecution[]
+  agentWorkflows        AgentWorkflow[]
+  businessProcessApprovalsAssigned BusinessProcessApproval[] @relation("BusinessProcessApprovalAssigned")
+  businessProcessApprovalsDecided  BusinessProcessApproval[] @relation("BusinessProcessApprovalDecidedBy")
+  businessProcessAudits            BusinessProcessAudit[]
+  communicationProviders           CommunicationProvider[]   @relation("CommunicationProviderCreatedBy")
+  communicationTemplatesCreated    CommunicationTemplate[]   @relation("CommunicationTemplateCreatedBy")
+  communicationMessages            CommunicationMessage[]
+  communicationWebhooksCreated     CommunicationWebhook[]    @relation("CommunicationWebhookCreatedBy")
+  communicationSubscriptions       CommunicationSubscription[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @map("_id")
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid()) @map("_id")
+  token     String   @unique
+  type      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Organization {
+  id            String   @id @default(uuid()) @map("_id")
+  name          String
+  legalName     String?
+  industry      String?
+  businessType  String?
+  companySize   String?
+  country       String?
+  stateRegion   String?
+  city          String?
+  address       String?
+  postalCode    String?
+  timezone      String?
+  currency      String?
+  logoUrl       String?
+  slug          String   @unique
+  status        String   @default("ACTIVE")
+
+  isDeleted     Boolean  @default(false)
+  deletedAt     DateTime?
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workspaces    Workspace[]
+  members       OrganizationMember[]
+  departments   Department[]
+  teams         Team[]
+  invitations   Invitation[]
+  activities    UserActivity[]
+  customRoles   CustomRole[]
+  notifications Notification[]
+  folders       Folder[]
+  documents     Document[]
+  companies     Company[]
+  contacts      Contact[]
+  leads         Lead[]
+  opportunities Opportunity[]
+  meetings      Meeting[]
+  proposals     Proposal[]
+  contracts     Contract[]
+  clients       Client[]
+  projects      Project[]
+  tasks         Task[]
+  timeEntries   TimeEntry[]
+  resourceAllocations ResourceAllocation[]
+  workSchedules WorkSchedule[]
+  knowledgeArticles   KnowledgeArticle[]
+  knowledgeCategories KnowledgeCategory[]
+  recentSearches      RecentSearch[]
+  workflows           Workflow[]
+  workflowExecutions  WorkflowExecution[]
+  aiProviders         AIProvider[]
+  promptCategories    PromptCategory[]
+  promptTemplates     PromptTemplate[]
+  promptExecutionLogs PromptExecutionLog[]
+  aiConversations     AIConversation[]
+  aiConversationFolders AIConversationFolder[]
+  aiMemoryCategories  AIMemoryCategory[]
+  aiMemories          AIMemory[]
+  aiContexts          AIContext[]
+  aiWorkspaceMemories AIWorkspaceMemory[]
+  aiUserPreferences   AIUserPreference[]
+  aiAssistants          AIAssistant[]
+  aiAssistantSessions   AIAssistantSession[]
+  aiAssistantExecutions AIAssistantExecution[]
+  aiToolExecutions      AIToolExecution[]
+  ragIndexes            RAGIndex[]
+  ragDocuments          RAGDocument[]
+  ragSearches           RAGSearch[]
+  aiAgents              AIAgent[]
+  aiAgentExecutions     AIAgentExecution[]
+  executiveDashboards   ExecutiveDashboard[]
+  executiveInsights     ExecutiveInsight[]
+  executiveMetrics      ExecutiveMetric[]
+  executiveAlerts       ExecutiveAlert[]
+  executivePredictions  ExecutivePrediction[]
+  agentWorkflows        AgentWorkflow[]
+  businessProcesses     BusinessProcess[]
+  businessProcessTemplates     BusinessProcessTemplate[]
+  businessProcessExecutions    BusinessProcessExecution[]
+  businessProcessApprovals     BusinessProcessApproval[]
+  businessProcessAudits        BusinessProcessAudit[]
+  businessProcessSchedules     BusinessProcessSchedule[]
+  communicationProviders       CommunicationProvider[]
+  communicationTemplates       CommunicationTemplate[]
+  communicationMessages        CommunicationMessage[]
+  communicationWebhooks        CommunicationWebhook[]
+  communicationSubscriptions   CommunicationSubscription[]
+  analyticsDashboards          AnalyticsDashboard[]
+  analyticsMetrics             AnalyticsMetric[]
+  analyticsSnapshots           AnalyticsSnapshot[]
+  analyticsReports             AnalyticsReport[]
+  analyticsForecasts           AnalyticsForecast[]
+  analyticsAnomalies           AnalyticsAnomaly[]
+  analyticsRecommendations     AnalyticsRecommendation[]
+  analyticsDatasets            AnalyticsDataset[]
+  integrationConnections       IntegrationConnection[]
+  integrationSyncJobs          IntegrationSyncJob[]
+  integrationLogs              IntegrationLog[]
+  integrationWebhooks          IntegrationWebhook[]
+  integrationEvents            IntegrationEvent[]
+  integrationTemplates         IntegrationTemplate[]
+}
+
+model Workspace {
+  id             String    @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  description    String?
+  logoUrl        String?
+  color          String?
+  status         String    @default("ACTIVE")
+
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  members        WorkspaceMember[]
+  invitations    Invitation[]
+  folders        Folder[]
+  documents      Document[]
+  companies      Company[]
+  contacts       Contact[]
+  leads          Lead[]
+  opportunities  Opportunity[]
+  meetings       Meeting[]
+  proposals      Proposal[]
+  contracts      Contract[]
+  projects       Project[]
+  aiMemories     AIMemory[]
+  aiToolExecutions AIToolExecution[]
+  aiWorkspaceMemories AIWorkspaceMemory[]
+  agentWorkflows        AgentWorkflow[]
+  businessProcesses     BusinessProcess[]
+  businessProcessTemplates     BusinessProcessTemplate[]
+  businessProcessExecutions    BusinessProcessExecution[]
+  businessProcessApprovals     BusinessProcessApproval[]
+  businessProcessAudits        BusinessProcessAudit[]
+  businessProcessSchedules     BusinessProcessSchedule[]
+  communicationProviders       CommunicationProvider[]
+  communicationTemplates       CommunicationTemplate[]
+  communicationMessages        CommunicationMessage[]
+  communicationWebhooks        CommunicationWebhook[]
+  communicationSubscriptions   CommunicationSubscription[]
+  analyticsDashboards          AnalyticsDashboard[]
+  analyticsMetrics             AnalyticsMetric[]
+  analyticsSnapshots           AnalyticsSnapshot[]
+  analyticsReports             AnalyticsReport[]
+  analyticsForecasts           AnalyticsForecast[]
+  analyticsAnomalies           AnalyticsAnomaly[]
+  analyticsRecommendations     AnalyticsRecommendation[]
+  analyticsDatasets            AnalyticsDataset[]
+  integrationConnections       IntegrationConnection[]
+}
+
+model BusinessProcess {
+  id              String    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name            String
+  description     String?
+  category        String?
+  status          String      @default("DRAFT")
+  priority        Int         @default(0)
+  estimatedDuration Int?
+  icon            String?
+  color           String?
+  tags            String?
+
+  templateId      String?
+  template        BusinessProcessTemplate? @relation(fields: [templateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdBy       String?
+  updatedBy       String?
+  isDeleted       Boolean     @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  executions      BusinessProcessExecution[]
+  schedules       BusinessProcessSchedule[]
+  audits          BusinessProcessAudit[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, isDeleted])
+}
+
+model BusinessProcessTemplate {
+  id              String    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name            String
+  description     String?
+  category        String?
+  icon            String?
+  color           String?
+  tags            String?
+  steps           String?
+  config          String?
+
+  isPreset        Boolean     @default(false)
+  version         Int         @default(1)
+  isDeleted       Boolean     @default(false)
+  deletedAt       DateTime?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  processes       BusinessProcess[]
+
+  @@index([organizationId])
+  @@index([organizationId, category])
+}
+
+model BusinessProcessExecution {
+  id              String              @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  processId       String
+  process         BusinessProcess     @relation(fields: [processId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  status          String              @default("PENDING")
+  trigger         String?
+  priority        Int                 @default(0)
+  inputData       String?
+  outputData      String?
+  errorMessage    String?
+  executionPlan   String?
+  retryCount      Int                 @default(0)
+  maxRetries      Int                 @default(3)
+  retryDelayMs    Int                 @default(5000)
+
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdBy       String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  steps           BusinessProcessStep[]
+  approvals       BusinessProcessApproval[]
+  audits          BusinessProcessAudit[]
+  schedule        BusinessProcessSchedule?
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([processId])
+  @@index([organizationId, createdAt])
+}
+
+model BusinessProcessStep {
+  id              String                    @id @default(uuid()) @map("_id")
+  executionId     String
+  execution       BusinessProcessExecution  @relation(fields: [executionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  stepOrder       Int
+  name            String
+  type            String
+  config          String?
+  inputData       String?
+  outputData      String?
+  status          String                    @default("PENDING")
+  errorMessage    String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  retryCount      Int                       @default(0)
+
+  createdAt       DateTime                  @default(now())
+
+  approvals       BusinessProcessApproval[]
+
+  @@index([executionId])
+  @@index([executionId, stepOrder])
+}
+
+model BusinessProcessApproval {
+  id              String                    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  executionId     String
+  execution       BusinessProcessExecution  @relation(fields: [executionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stepId          String?
+  step            BusinessProcessStep?      @relation(fields: [stepId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title           String
+  description     String?
+  assignedToId    String?
+  assignedTo      User?                     @relation("BusinessProcessApprovalAssigned", fields: [assignedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  roleRequired    String?
+  status          String                    @default("PENDING")
+  comment         String?
+  decidedById     String?
+  decidedBy       User?                     @relation("BusinessProcessApprovalDecidedBy", fields: [decidedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  decidedAt       DateTime?
+
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([executionId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model BusinessProcessAudit {
+  id              String                    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  executionId     String?
+  execution       BusinessProcessExecution? @relation(fields: [executionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  processId       String?
+  process         BusinessProcess?          @relation(fields: [processId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  action          String
+  entityType      String
+  entityId        String
+  userId          String?
+  user            User?                     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  details         String?
+  metadata        String?
+
+  createdAt       DateTime                  @default(now())
+
+  @@index([organizationId])
+  @@index([executionId])
+  @@index([processId])
+  @@index([organizationId, createdAt])
+}
+
+model BusinessProcessSchedule {
+  id              String                    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization              @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  processId       String
+  process         BusinessProcess           @relation(fields: [processId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  executionId     String?                   @unique
+  execution       BusinessProcessExecution? @relation(fields: [executionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  cronExpression  String?
+  intervalMinutes Int?
+  startAt         DateTime?
+  endAt           DateTime?
+  maxExecutions   Int                       @default(0)
+  executedCount   Int                       @default(0)
+  lastExecutedAt  DateTime?
+  nextRunAt       DateTime?
+  status          String                    @default("ACTIVE")
+  config          String?
+
+  isDeleted       Boolean                   @default(false)
+  deletedAt       DateTime?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([organizationId])
+  @@index([processId])
+  @@index([status, nextRunAt])
+}
+
+model Department {
+  id             String    @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  description    String?
+  headId         String?
+  head           User?     @relation("DepartmentHead", fields: [headId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  members        OrganizationMember[]
+  teams          Team[]
+}
+
+model Team {
+  id             String    @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  departmentId   String?
+  department     Department?  @relation(fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  description    String?
+  color          String?
+  avatarUrl      String?
+  leaderId       String?
+  leader         User?     @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isDeleted      Boolean   @default(false)
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  members        TeamMember[]
+}
+
+model TeamMember {
+  id             String    @id @default(uuid()) @map("_id")
+  teamId         String
+  team           Team      @relation(fields: [teamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role           String    @default("MEMBER")
+
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, teamId])
+}
+
+model OrganizationMember {
+  id             String    @id @default(uuid()) @map("_id")
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role           String
+  customRoleId   String?
+  customRole     CustomRole?  @relation(fields: [customRoleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  departmentId   String?
+  department     Department?  @relation(fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  jobTitle       String?
+  status         String    @default("ACTIVE")
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, organizationId])
+}
+
+model WorkspaceMember {
+  id             String    @id @default(uuid()) @map("_id")
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role           String
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, workspaceId])
+}
+
+model Invitation {
+  id             String    @id @default(uuid()) @map("_id")
+  email          String
+  token          String    @unique
+  role           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String?
+  workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status         String    @default("PENDING")
+
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+}
+
+model CustomRole {
+  id             String    @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  description    String?
+  
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  permissions    RolePermission[]
+  members        OrganizationMember[]
+}
+
+model RolePermission {
+  id           String    @id @default(uuid()) @map("_id")
+  customRoleId String
+  customRole   CustomRole @relation(fields: [customRoleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  resource     String
+  action       String
+  
+  createdAt    DateTime  @default(now())
+
+  @@unique([customRoleId, resource, action])
+}
+
+model UserActivity {
+  id             String    @id @default(uuid()) @map("_id")
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  action         String
+  module         String?
+  entityType     String?
+  entityId       String?
+  metadata       String?
+  ipAddress      String?
+  device         String?
+
+  createdAt      DateTime  @default(now())
+  
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model Notification {
+  id             String    @id @default(uuid()) @map("_id")
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  title          String
+  message        String
+  category       String    @default("SYSTEM")
+  priority       String    @default("LOW")
+  linkUrl        String?
+  isRead         Boolean   @default(false)
+  
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId, isRead])
+  @@index([organizationId])
+}
+
+model NotificationPreference {
+  id             String    @id @default(uuid()) @map("_id")
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  emailEnabled   Boolean   @default(true)
+  pushEnabled    Boolean   @default(true)
+  inAppEnabled   Boolean   @default(true)
+  categories     String
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId])
+}
+
+model Folder {
+  id             String    @id @default(uuid()) @map("_id")
+  name           String
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String?
+  workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  parentId       String?
+  parent         Folder?   @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children       Folder[]  @relation("FolderToFolder")
+
+  ownerId        String
+  owner          User      @relation(fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  documents      Document[]
+
+  @@index([organizationId])
+  @@index([parentId])
+}
+
+model Document {
+  id               String    @id @default(uuid()) @map("_id")
+  name             String
+  originalName     String
+  mimeType         String
+  size             Int
+  storagePath      String
+  extension        String?
+  
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  folderId         String?
+  folder           Folder?      @relation(fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  moduleReference  String?
+  
+  ownerId          String
+  owner            User      @relation(fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  versions         DocumentVersion[]
+  comments         DocumentComment[]
+  tags             DocumentTag[]
+  favoritedBy      FavoriteDocument[]
+
+  @@index([organizationId])
+  @@index([folderId])
+  @@index([moduleReference])
+}
+
+model DocumentVersion {
+  id           String    @id @default(uuid()) @map("_id")
+  documentId   String
+  document     Document  @relation(fields: [documentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  versionNum   Int
+  size         Int
+  storagePath  String
+  
+  createdBy    String
+  createdAt    DateTime  @default(now())
+}
+
+model DocumentComment {
+  id           String    @id @default(uuid()) @map("_id")
+  documentId   String
+  document     Document  @relation(fields: [documentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  content      String
+  
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model DocumentTag {
+  id           String    @id @default(uuid()) @map("_id")
+  documentId   String
+  document     Document  @relation(fields: [documentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name         String
+
+  @@unique([documentId, name])
+}
+
+model FavoriteDocument {
+  id           String    @id @default(uuid()) @map("_id")
+  documentId   String
+  document     Document  @relation(fields: [documentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([documentId, userId])
+}
+
+// ==========================================
+// CRM - COMPANY MANAGEMENT
+// ==========================================
+
+model Company {
+  id               String    @id @default(uuid()) @map("_id")
+  name             String
+  legalName        String?
+  industry         String?
+  companyType      String?
+  website          String?
+  email            String?
+  phone            String?
+  country          String?
+  city             String?
+  address          String?
+  postalCode       String?
+  numberOfEmployees Int?
+  annualRevenue    Float?
+  status           String    @default("PROSPECT")
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  assignedToId     String?
+  assignedTo       User?     @relation("CompanyAssignedTo", fields: [assignedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdById      String
+  createdBy        User      @relation("CompanyCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tags             CompanyTag[]
+  notes            CompanyNote[]
+  activities       CompanyActivity[]
+  contacts         Contact[]
+  opportunities    Opportunity[]
+  meetings         Meeting[]
+  proposals        Proposal[]
+  contracts        Contract[]
+  client           Client?
+  projects         Project[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([assignedToId])
+}
+
+model CompanyTag {
+  id           String    @id @default(uuid()) @map("_id")
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name         String
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([companyId, name])
+}
+
+model CompanyNote {
+  id           String    @id @default(uuid()) @map("_id")
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content      String
+  createdById  String
+  createdBy    User      @relation("CompanyNoteCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model CompanyActivity {
+  id           String    @id @default(uuid()) @map("_id")
+  companyId    String
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action       String
+  description  String?
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata     String?
+
+  createdAt    DateTime  @default(now())
+}
+
+// ==========================================
+// CRM - CONTACT MANAGEMENT
+// ==========================================
+
+model Contact {
+  id               String    @id @default(uuid()) @map("_id")
+  firstName        String
+  lastName         String
+  jobTitle         String?
+  department       String?
+  email            String?
+  phone            String?
+  mobile           String?
+  linkedinUrl      String?
+  country          String?
+  city             String?
+  preferredLanguage String?
+  status           String    @default("ACTIVE")
+  isPrimary        Boolean   @default(false)
+
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  assignedToId     String?
+  assignedTo       User?     @relation("ContactAssignedTo", fields: [assignedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdById      String
+  createdBy        User      @relation("ContactCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tags             ContactTag[]
+  notes            ContactNote[]
+  activities       ContactActivity[]
+  opportunities    Opportunity[]
+  meetings         Meeting[]
+  proposals        Proposal[]
+  contracts        Contract[]
+
+  @@index([organizationId])
+  @@index([companyId])
+  @@index([status])
+  @@index([assignedToId])
+}
+
+model ContactTag {
+  id           String    @id @default(uuid()) @map("_id")
+  contactId    String
+  contact      Contact   @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name         String
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([contactId, name])
+}
+
+model ContactNote {
+  id           String    @id @default(uuid()) @map("_id")
+  contactId    String
+  contact      Contact   @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content      String
+  createdById  String
+  createdBy    User      @relation("ContactNoteCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model ContactActivity {
+  id           String    @id @default(uuid()) @map("_id")
+  contactId    String
+  contact      Contact   @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action       String
+  description  String?
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata     String?
+
+  createdAt    DateTime  @default(now())
+}
+
+// ==========================================
+// CRM - LEAD MANAGEMENT
+// ==========================================
+
+model Lead {
+  id               String    @id @default(uuid()) @map("_id")
+  firstName        String
+  lastName         String
+  companyName      String?
+  email            String?
+  phone            String?
+  jobTitle         String?
+  country          String?
+  source           String    @default("OTHER")
+  status           String    @default("NEW")
+  leadScore        Int       @default(0)
+  estimatedValue   Float?
+  expectedCloseDate DateTime?
+  description      String?
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  assignedToId     String?
+  assignedTo       User?     @relation("LeadAssignedTo", fields: [assignedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdById      String
+  createdBy        User      @relation("LeadCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tags             LeadTag[]
+  notes            LeadNote[]
+  activities       LeadActivity[]
+  opportunities    Opportunity[]
+  meetings         Meeting[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([source])
+  @@index([assignedToId])
+}
+
+model LeadTag {
+  id           String    @id @default(uuid()) @map("_id")
+  leadId       String
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name         String
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([leadId, name])
+}
+
+model LeadNote {
+  id           String    @id @default(uuid()) @map("_id")
+  leadId       String
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content      String
+  createdById  String
+  createdBy    User      @relation("LeadNoteCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model LeadActivity {
+  id           String    @id @default(uuid()) @map("_id")
+  leadId       String
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action       String
+  description  String?
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata     String?
+
+  createdAt    DateTime  @default(now())
+}
+
+// ==========================================
+// CRM - OPPORTUNITIES & SALES PIPELINE
+// ==========================================
+
+model Opportunity {
+  id               String    @id @default(uuid()) @map("_id")
+  name             String
+  probability      Int       @default(0)
+  estimatedValue   Float?
+  currency         String    @default("USD")
+  expectedCloseDate DateTime?
+  actualCloseDate  DateTime?
+  source           String?
+  description      String?
+  competitor       String?
+  nextFollowupDate DateTime?
+  stage            String    @default("NEW_OPPORTUNITY")
+  status           String    @default("OPEN")
+
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contactId        String?
+  contact          Contact?  @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  leadId           String?
+  lead             Lead?     @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  assignedToId     String?
+  assignedTo       User?     @relation("OpportunityAssignedTo", fields: [assignedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdById      String
+  createdBy        User      @relation("OpportunityCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tags             OpportunityTag[]
+  notes            OpportunityNote[]
+  activities       OpportunityActivity[]
+  meetings         Meeting[]
+  proposals        Proposal[]
+  contracts        Contract[]
+
+  @@index([organizationId])
+  @@index([stage])
+  @@index([status])
+  @@index([companyId])
+  @@index([assignedToId])
+}
+
+model OpportunityTag {
+  id              String    @id @default(uuid()) @map("_id")
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name            String
+
+  createdAt       DateTime  @default(now())
+
+  @@unique([opportunityId, name])
+}
+
+model OpportunityNote {
+  id              String    @id @default(uuid()) @map("_id")
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content         String
+  createdById     String
+  createdBy       User      @relation("OpportunityNoteCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model OpportunityActivity {
+  id              String    @id @default(uuid()) @map("_id")
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action          String
+  description     String?
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata        String?
+
+  createdAt       DateTime  @default(now())
+}
+
+// ==========================================
+// CRM - MEETINGS & FOLLOW-UP MANAGEMENT
+// ==========================================
+
+model Meeting {
+  id               String    @id @default(uuid()) @map("_id")
+  title            String
+  meetingType      String    @default("DISCOVERY")
+  status           String    @default("SCHEDULED")
+
+  date             DateTime
+  startTime        String
+  endTime          String
+  location         String?
+  meetingLink      String?
+  agenda           String?
+  outcome          String?
+  nextFollowupDate DateTime?
+
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contactId        String?
+  contact          Contact?  @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  leadId           String?
+  lead             Lead?     @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opportunityId    String?
+  opportunity      Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById      String
+  createdBy        User      @relation("MeetingCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  participants     MeetingParticipant[]
+  notes            MeetingNote[]
+  actionItems      MeetingActionItem[]
+  proposals        Proposal[]
+
+  @@index([organizationId])
+  @@index([date])
+  @@index([status])
+  @@index([companyId])
+}
+
+model MeetingParticipant {
+  id           String    @id @default(uuid()) @map("_id")
+  meetingId    String
+  meeting      Meeting   @relation(fields: [meetingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role         String    @default("ATTENDEE")
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([meetingId, userId])
+}
+
+model MeetingNote {
+  id           String    @id @default(uuid()) @map("_id")
+  meetingId    String
+  meeting      Meeting   @relation(fields: [meetingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content      String
+  createdById  String
+  createdBy    User      @relation("MeetingNoteCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model MeetingActionItem {
+  id           String    @id @default(uuid()) @map("_id")
+  meetingId    String
+  meeting      Meeting   @relation(fields: [meetingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  title        String
+  description  String?
+  ownerId      String?
+  owner        User?     @relation("MeetingActionItemOwner", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dueDate      DateTime?
+  status       String    @default("PENDING")
+  priority     String    @default("MEDIUM")
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ==========================================
+// CRM - PROPOSAL & QUOTATION MANAGEMENT
+// ==========================================
+
+model Proposal {
+  id               String    @id @default(uuid()) @map("_id")
+  proposalNumber   String
+  title            String
+  status           String    @default("DRAFT")
+  currency         String    @default("USD")
+  totalValue       Float?
+  discount         Float?
+  tax              Float?
+  issueDate        DateTime?
+  expiryDate       DateTime?
+  notes            String?
+  termsAndConditions String?
+
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contactId        String?
+  contact          Contact?  @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opportunityId    String?
+  opportunity      Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meetingId        String?
+  meeting          Meeting?  @relation(fields: [meetingId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById      String
+  createdBy        User      @relation("ProposalCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ownerId          String?
+  owner            User?     @relation("ProposalOwner", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  sections         ProposalSection[]
+  versions         ProposalVersion[]
+  approvalLogs     ProposalApprovalLog[]
+  activities       ProposalActivity[]
+  contracts        Contract[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([companyId])
+  @@index([proposalNumber])
+}
+
+model ProposalSection {
+  id              String    @id @default(uuid()) @map("_id")
+  proposalId      String
+  proposal        Proposal  @relation(fields: [proposalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  title           String
+  content         String?
+  sortOrder       Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model ProposalVersion {
+  id              String    @id @default(uuid()) @map("_id")
+  proposalId      String
+  proposal        Proposal  @relation(fields: [proposalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  versionNumber   Int
+  title           String
+  status          String    @default("DRAFT")
+  totalValue      Float?
+  content         String?
+  createdById     String
+  createdAt       DateTime  @default(now())
+
+  @@unique([proposalId, versionNumber])
+}
+
+model ProposalApprovalLog {
+  id              String    @id @default(uuid()) @map("_id")
+  proposalId      String
+  proposal        Proposal  @relation(fields: [proposalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action          String
+  comment         String?
+  userId          String
+  user            User      @relation("ProposalApprovals", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt       DateTime  @default(now())
+}
+
+model ProposalActivity {
+  id              String    @id @default(uuid()) @map("_id")
+  proposalId      String
+  proposal        Proposal  @relation(fields: [proposalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action          String
+  description     String?
+  userId          String
+  user            User      @relation("ProposalActivities", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata        String?
+
+  createdAt       DateTime  @default(now())
+}
+
+// ==========================================
+// CRM - CONTRACT MANAGEMENT & CLIENT CONVERSION
+// ==========================================
+
+model Contract {
+  id               String    @id @default(uuid()) @map("_id")
+  contractNumber   String
+  title            String
+  status           String    @default("DRAFT")
+  contractType     String    @default("SERVICE_AGREEMENT")
+  currency         String    @default("USD")
+  contractValue    Float?
+  paymentTerms     String?
+  autoRenewal      Boolean   @default(false)
+  notes            String?
+
+  startDate        DateTime?
+  endDate          DateTime?
+  renewalDate      DateTime?
+
+  proposalId       String?
+  proposal         Proposal?  @relation(fields: [proposalId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opportunityId    String?
+  opportunity      Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contactId        String?
+  contact          Contact?  @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById      String
+  createdBy        User      @relation("ContractCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ownerId          String?
+  owner            User?     @relation("ContractOwner", fields: [ownerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  versions         ContractVersion[]
+  approvalLogs     ContractApproval[]
+  activities       ContractActivity[]
+  projects         Project[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([companyId])
+  @@index([contractNumber])
+}
+
+model ContractVersion {
+  id              String    @id @default(uuid()) @map("_id")
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  versionNumber   Int
+  title           String
+  status          String    @default("DRAFT")
+  contractValue   Float?
+  content         String?
+  createdById     String
+  createdAt       DateTime  @default(now())
+
+  @@unique([contractId, versionNumber])
+}
+
+model ContractApproval {
+  id              String    @id @default(uuid()) @map("_id")
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action          String
+  comment         String?
+  userId          String
+  user            User      @relation("ContractApprovalLogs", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt       DateTime  @default(now())
+}
+
+model ContractActivity {
+  id              String    @id @default(uuid()) @map("_id")
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action          String
+  description     String?
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata        String?
+
+  createdAt       DateTime  @default(now())
+}
+
+model Client {
+  id              String    @id @default(uuid()) @map("_id")
+  companyName     String
+  status          String    @default("ACTIVE")
+  notes           String?
+
+  companyId       String    @unique
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById     String
+  activatedById   String?
+  convertedAt     DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  projects        Project[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ==========================================
+// PROJECT MANAGEMENT
+// ==========================================
+
+model Project {
+  id               String    @id @default(uuid()) @map("_id")
+  projectName      String
+  projectCode      String
+  description      String?
+  status           String    @default("PLANNING")
+  priority         String    @default("MEDIUM")
+  budget           Float?
+  currency         String    @default("USD")
+  startDate        DateTime?
+  endDate          DateTime?
+  progress         Int       @default(0)
+
+  clientId         String?
+  client           Client?   @relation(fields: [clientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contractId       String?
+  contract         Contract? @relation(fields: [contractId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projectManagerId String?
+  projectManager   User?     @relation("ProjectManager", fields: [projectManagerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById      String
+  createdBy        User      @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  members          ProjectMember[]
+  phases           ProjectPhase[]
+  milestones       Milestone[]
+  activities       ProjectActivity[]
+  tasks            Task[]
+  timeEntries      TimeEntry[]
+  resourceAllocations ResourceAllocation[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([companyId])
+}
+
+model ProjectMember {
+  id           String    @id @default(uuid()) @map("_id")
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  role         String    @default("MEMBER")
+
+  createdBy    String?
+  updatedBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([projectId, userId])
+}
+
+model ProjectPhase {
+  id           String    @id @default(uuid()) @map("_id")
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name         String
+  description  String?
+  status       String    @default("PENDING")
+  sortOrder    Int       @default(0)
+  startDate    DateTime?
+  endDate      DateTime?
+  completedAt  DateTime?
+
+  createdBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Milestone {
+  id           String    @id @default(uuid()) @map("_id")
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  title        String
+  description  String?
+  status       String    @default("PENDING")
+  priority     String    @default("MEDIUM")
+  dueDate      DateTime?
+  completedAt  DateTime?
+
+  createdBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tasks        Task[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model ProjectActivity {
+  id           String    @id @default(uuid()) @map("_id")
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  action       String
+  description  String?
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  metadata     String?
+
+  createdAt    DateTime  @default(now())
+}
+
+// ==========================================
+// TASK MANAGEMENT & KANBAN
+// ==========================================
+
+model Task {
+  id               String    @id @default(uuid()) @map("_id")
+  title            String
+  description      String?
+  status           String    @default("TODO")
+  priority         String    @default("MEDIUM")
+  labels           String?
+  tags             String?
+  estimatedHours   Float?
+  dueDate          DateTime?
+  completedAt      DateTime?
+
+  projectId        String
+  project          Project   @relation(fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  milestoneId      String?
+  milestone        Milestone? @relation(fields: [milestoneId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reporterId       String
+  reporter         User      @relation("TaskReporter", fields: [reporterId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById      String
+  createdBy        User      @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy        String?
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  assignees        TaskAssignee[]
+  comments         TaskComment[]
+  attachments      TaskAttachment[]
+  checklists       TaskChecklist[]
+  parentDependencies  TaskDependency[] @relation("TaskDependsOn")
+  childDependencies   TaskDependency[] @relation("TaskBlocks")
+  timeEntries      TimeEntry[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+  @@index([milestoneId])
+}
+
+model TaskAssignee {
+  id           String    @id @default(uuid()) @map("_id")
+  taskId       String
+  task         Task      @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([taskId, userId])
+}
+
+model TaskComment {
+  id           String    @id @default(uuid()) @map("_id")
+  taskId       String
+  task         Task      @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content      String
+
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model TaskAttachment {
+  id           String    @id @default(uuid()) @map("_id")
+  taskId       String
+  task         Task      @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int
+  storagePath  String
+
+  uploadedById String
+  uploadedBy   User      @relation(fields: [uploadedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt    DateTime  @default(now())
+}
+
+model TaskChecklist {
+  id           String    @id @default(uuid()) @map("_id")
+  taskId       String
+  task         Task      @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  title        String
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  items        TaskChecklistItem[]
+}
+
+model TaskChecklistItem {
+  id             String    @id @default(uuid()) @map("_id")
+  checklistId    String
+  checklist      TaskChecklist @relation(fields: [checklistId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  title          String
+  isCompleted    Boolean   @default(false)
+  sortOrder      Int       @default(0)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model TaskDependency {
+  id               String    @id @default(uuid()) @map("_id")
+  taskId           String
+  task             Task      @relation("TaskBlocks", fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dependsOnId      String
+  dependsOn        Task      @relation("TaskDependsOn", fields: [dependsOnId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  type             String    @default("FINISH_TO_START")
+
+  createdAt        DateTime  @default(now())
+
+  @@unique([taskId, dependsOnId])
+}
+
+// ==========================================
+// RESOURCE MANAGEMENT & TIME TRACKING
+// ==========================================
+
+model TimeEntry {
+  id             String    @id @default(uuid()) @map("_id")
+  description    String?
+  date           DateTime
+  startTime      DateTime?
+  endTime        DateTime?
+  duration       Float?
+  billable       Boolean   @default(false)
+  status         String    @default("DRAFT")
+
+  userId         String
+  user           User      @relation("TimeEntryUser", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  taskId         String?
+  task           Task?     @relation(fields: [taskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById    String
+  createdBy      User      @relation("TimeEntryCreator", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy      String?
+
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([date])
+  @@index([status])
+}
+
+model ResourceAllocation {
+  id                   String    @id @default(uuid()) @map("_id")
+  role                 String?
+  allocationPercentage Float     @default(100)
+  startDate            DateTime
+  endDate              DateTime?
+  capacity             Float?
+  notes                String?
+
+  userId               String
+  user                 User      @relation("ResourceAllocationUser", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  projectId            String
+  project              Project   @relation(fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdById          String
+  createdBy            User      @relation("ResourceAllocationCreator", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy            String?
+
+  isDeleted            Boolean   @default(false)
+  deletedAt            DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([userId, projectId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([projectId])
+}
+
+model WorkSchedule {
+  id             String    @id @default(uuid()) @map("_id")
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dayOfWeek      Int
+  startTime      String
+  endTime        String
+  hoursPerDay    Float
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, organizationId, dayOfWeek])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model KnowledgeCategory {
+  id             String    @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  slug           String
+  description    String?
+  icon           String?
+  color          String?
+
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  articles       KnowledgeArticle[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+model KnowledgeArticle {
+  id               String    @id @default(uuid()) @map("_id")
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title            String
+  slug             String
+  summary          String?
+  content          String
+  status           String    @default("DRAFT")
+  visibility       String    @default("ORGANIZATION")
+  featuredImageUrl String?
+
+  authorId         String
+  author           User      @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  categoryId       String?
+  category         KnowledgeCategory? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([status])
+
+  revisions        KnowledgeRevision[]
+  comments         KnowledgeComment[]
+  favorites        KnowledgeFavorite[]
+  attachments      KnowledgeAttachment[]
+}
+
+model KnowledgeRevision {
+  id            String           @id @default(uuid()) @map("_id")
+  articleId     String
+  article       KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revisionNum   Int
+  title         String
+  content       String
+  summary       String?
+  changeSummary String?
+  updatedById   String
+  updatedBy     User             @relation(fields: [updatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt     DateTime         @default(now())
+
+  @@index([articleId])
+  @@index([updatedById])
+}
+
+model KnowledgeComment {
+  id        String           @id @default(uuid()) @map("_id")
+  articleId String
+  article   KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  authorId  String
+  author    User             @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  content   String
+  isDeleted Boolean          @default(false)
+  deletedAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([articleId])
+  @@index([authorId])
+}
+
+model KnowledgeFavorite {
+  id        String           @id @default(uuid()) @map("_id")
+  articleId String
+  article   KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt DateTime         @default(now())
+
+  @@unique([articleId, userId])
+  @@index([articleId])
+  @@index([userId])
+}
+
+model KnowledgeAttachment {
+  id           String           @id @default(uuid()) @map("_id")
+  articleId    String
+  article      KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name         String
+  originalName String
+  mimeType     String
+  size         Int
+  storagePath  String
+  uploadedById String
+  uploadedBy   User             @relation(fields: [uploadedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  isDeleted    Boolean          @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([articleId])
+  @@index([uploadedById])
+}
+
+model RecentSearch {
+  id             String       @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  query          String
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, userId])
+}
+
+model Workflow {
+  id             String    @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  name           String
+  description    String?
+  status         String    @default("DRAFT") // DRAFT, ACTIVE, DISABLED
+  
+  createdBy      String
+  creator        User      @relation("WorkflowCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy      String?
+  updater        User?     @relation("WorkflowUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  triggers       WorkflowTrigger[]
+  conditions     WorkflowCondition[]
+  actions        WorkflowAction[]
+  executions     WorkflowExecution[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, isDeleted])
+}
+
+model WorkflowTrigger {
+  id          String   @id @default(uuid()) @map("_id")
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  type        String   // LEAD_CREATED, LEAD_CONVERTED, OPPORTUNITY_WON, MEETING_SCHEDULED, PROPOSAL_APPROVED, CONTRACT_ACTIVATED, PROJECT_CREATED, PROJECT_COMPLETED, TASK_CREATED, TASK_COMPLETED, KNOWLEDGE_ARTICLE_PUBLISHED
+  config      String?  // JSON string
+  createdAt   DateTime @default(now())
+
+  @@index([workflowId])
+  @@index([type])
+}
+
+model WorkflowCondition {
+  id          String   @id @default(uuid()) @map("_id")
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  field       String   // e.g. status, value, priority, title
+  operator    String   // EQUALS, NOT_EQUALS, CONTAINS, GREATER_THAN, LESS_THAN, IS_SET
+  value       String
+  stepOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([workflowId])
+}
+
+model WorkflowAction {
+  id          String   @id @default(uuid()) @map("_id")
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  type        String   // CREATE_RECORD, UPDATE_RECORD, ASSIGN_USER, SEND_NOTIFICATION, CREATE_ACTIVITY, CREATE_TASK, CREATE_PROJECT, EMAIL_ACTION, DELAY_ACTION
+  config      String   // JSON string configuration
+  stepOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([workflowId])
+}
+
+model WorkflowExecution {
+  id             String       @id @default(uuid()) @map("_id")
+  workflowId     String
+  workflow       Workflow     @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  triggerType    String
+  entityType     String
+  entityId       String
+  status         String       @default("SUCCESS") // SUCCESS, FAILED, SKIPPED, IN_PROGRESS
+  logs           String       // JSON string of step logs
+  error          String?
+  executedById   String?
+  executedBy     User?        @relation(fields: [executedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt      DateTime     @default(now())
+
+  @@index([workflowId])
+  @@index([organizationId, createdAt])
+}
+
+model AIProvider {
+  id             String       @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  name           String       // e.g. "Production OpenAI", "Local Ollama"
+  providerType   String       // OPENAI, ANTHROPIC, GEMINI, DEEPSEEK, OPENROUTER, OLLAMA
+  apiKey         String?      // Encrypted API key
+  baseUrl        String?      // Custom Base URL (e.g. http://localhost:11434 for Ollama)
+  enabled        Boolean      @default(true)
+  isDefault      Boolean      @default(false)
+  
+  createdBy      String
+  creator        User         @relation("AIProviderCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy      String?
+  updater        User?        @relation("AIProviderUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  isDeleted      Boolean      @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  models         AIModel[]
+
+  @@index([organizationId, enabled])
+  @@index([organizationId, isDeleted])
+}
+
+model AIModel {
+  id            String     @id @default(uuid()) @map("_id")
+  providerId    String
+  provider      AIProvider @relation(fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  modelName     String     // e.g. "gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro", "deepseek-chat", "llama3"
+  displayName   String
+  maxTokens     Int        @default(4096)
+  temperature   Float      @default(0.7)
+  contextWindow Int        @default(128000)
+  enabled       Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([providerId])
+}
+
+model PromptCategory {
+  id             String           @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  description    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  templates      PromptTemplate[]
+
+  @@index([organizationId])
+}
+
+model PromptTemplate {
+  id                 String           @id @default(uuid()) @map("_id")
+  organizationId     String
+  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  categoryId         String?
+  category           PromptCategory?  @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name               String
+  description        String?
+  systemPrompt       String?
+  userPrompt         String
+  currentVersion     Int              @default(1)
+  status             String           @default("DRAFT") // DRAFT, PUBLISHED, ARCHIVED
+  tags               String           @default("[]")    // JSON string array e.g. ["sales", "lead"]
+  modelCompatibility String           @default("[]")    // JSON string array e.g. ["gpt-4o", "claude-3-5-sonnet"]
+  temperature        Float            @default(0.7)
+  maxTokens          Int              @default(4096)
+
+  createdBy          String
+  creator            User             @relation("PromptCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy          String?
+  updater            User?            @relation("PromptUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isDeleted          Boolean          @default(false)
+  deletedAt          DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  versions           PromptVersion[]
+  variables          PromptVariable[]
+  logs               PromptExecutionLog[]
+  agentPrompts       AIAgentPrompt[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, isDeleted])
+}
+
+model PromptVersion {
+  id             String         @id @default(uuid()) @map("_id")
+  templateId     String
+  template       PromptTemplate @relation(fields: [templateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  versionNumber  Int
+  systemPrompt   String?
+  userPrompt     String
+  variablesJson  String         @default("[]") // JSON snapshot of variables
+  temperature    Float          @default(0.7)
+  maxTokens      Int            @default(4096)
+  changeSummary  String?
+
+  createdBy      String
+  creator        User           @relation("PromptVersionCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt      DateTime       @default(now())
+
+  @@index([templateId, versionNumber])
+}
+
+model PromptVariable {
+  id           String         @id @default(uuid()) @map("_id")
+  templateId   String
+  template     PromptTemplate @relation(fields: [templateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name         String         // e.g. company_name, client_name
+  description  String?
+  required     Boolean        @default(true)
+  defaultValue String?
+  type         String         @default("STRING") // STRING, NUMBER, BOOLEAN, JSON, CONTEXT
+
+  @@index([templateId])
+}
+
+model PromptExecutionLog {
+  id              String         @id @default(uuid()) @map("_id")
+  templateId      String
+  template        PromptTemplate @relation(fields: [templateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  executedById    String
+  executedBy      User           @relation(fields: [executedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  variablesUsed   String         // JSON string
+  status          String         @default("SUCCESS") // SUCCESS, FAILED
+  executionTimeMs Int            @default(0)
+  createdAt       DateTime       @default(now())
+
+  @@index([templateId])
+  @@index([organizationId, createdAt])
+}
+
+model AIConversationFolder {
+  id             String           @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  color          String?          @default("bg-blue-500")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  conversations  AIConversation[]
+
+  @@index([organizationId, userId])
+}
+
+model AIConversation {
+  id             String                @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String
+  user           User                  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  folderId       String?
+  folder         AIConversationFolder? @relation(fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title          String                @default("New AI Chat Thread")
+  provider       String                @default("OPENAI")
+  model          String                @default("gpt-4o")
+  systemPrompt   String?
+  isPinned       Boolean               @default(false)
+  isArchived     Boolean               @default(false)
+  isDeleted      Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  messages       AIMessage[]
+  shares         AIConversationShare[]
+  pins           AIConversationPin[]
+
+  @@index([organizationId, userId])
+  @@index([organizationId, isPinned])
+  @@index([organizationId, isArchived])
+}
+
+model AIMessage {
+  id             String         @id @default(uuid()) @map("_id")
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  role           String         // SYSTEM, USER, ASSISTANT, TOOL
+  content        String
+  tokens         Int            @default(0)
+  responseTimeMs Int            @default(0)
+  provider       String?
+  model          String?
+  status         String         @default("DELIVERED") // SENT, DELIVERED, GENERATING, ERROR
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model AIConversationShare {
+  id               String         @id @default(uuid()) @map("_id")
+  conversationId   String
+  conversation     AIConversation @relation(fields: [conversationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sharedWithUserId String
+  sharedWithUser   User           @relation(fields: [sharedWithUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  permission       String         @default("VIEW") // VIEW, EDIT
+  createdAt        DateTime       @default(now())
+
+  @@index([conversationId])
+}
+
+model AIConversationPin {
+  id             String         @id @default(uuid()) @map("_id")
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, userId])
+}
+
+model AIMemoryCategory {
+  id             String       @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name           String
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  memories       AIMemory[]
+
+  @@index([organizationId])
+}
+
+model AIMemory {
+  id             String            @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String?
+  workspace      Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String?
+  user           User?             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  categoryId     String?
+  category       AIMemoryCategory? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title          String
+  memoryType     String            // USER, ORGANIZATION, WORKSPACE, CONVERSATION, CRM, PROJECT, KNOWLEDGE
+  summary        String
+  source         String            // CRM, PROJECT, KNOWLEDGE, DOCUMENT, MEETING, CONVERSATION, WORKFLOW
+  tags           String            @default("[]") // JSON string array
+  importance     Int               @default(5)    // 1 to 10
+  lastUsedAt     DateTime?
+  isPinned       Boolean           @default(false)
+  isArchived     Boolean           @default(false)
+  isDeleted      Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, memoryType])
+  @@index([organizationId, isDeleted])
+}
+
+model AIContext {
+  id             String       @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  entityType     String       // CRM_LEAD, PROJECT, WORKSPACE, USER
+  entityId       String
+  contextData    String       // JSON payload
+  summary        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, entityType, entityId])
+}
+
+model AIConversationContext {
+  id              String   @id @default(uuid()) @map("_id")
+  conversationId  String
+  contextSnapshot String   // JSON snapshot
+  activeMemories  String   @default("[]") // JSON string
+  createdAt       DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+model AIWorkspaceMemory {
+  id             String       @id @default(uuid()) @map("_id")
+  workspaceId    String
+  workspace      Workspace    @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  key            String
+  value          String
+  category       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([workspaceId, key])
+}
+
+model AIUserPreference {
+  id              String       @id @default(uuid()) @map("_id")
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  preferenceKey   String
+  preferenceValue String
+  category        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([userId, preferenceKey])
+}
+
+// ==========================================
+// ENTERPRISE AI ASSISTANT CORE
+// ==========================================
+
+model AIAssistant {
+  id              String       @id @default(uuid()) @map("_id")
+  name            String       @default("BlackDesk AI Assistant")
+  description     String?      @default("Central Enterprise AI Assistant orchestrating intelligence across all workspace modules.")
+  avatar          String?
+  systemPrompt    String?      @default("You are BlackDesk Assistant, an intelligent enterprise AI assistant designed to automate workflows, answer queries across CRM, Projects, Knowledge Base, and Documents, and guide users through enterprise operations.")
+  defaultProvider String       @default("OPENAI") // OPENAI, ANTHROPIC, GOOGLE, LOCAL
+  defaultModel    String       @default("gpt-4o")
+  temperature     Float        @default(0.7)
+  maxTokens       Int          @default(4096)
+  enabled         Boolean      @default(true)
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy       String
+  creator         User         @relation("AIAssistantCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy       String?
+  updater         User?        @relation("AIAssistantUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isDeleted       Boolean      @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  capabilities    AIAssistantCapability[]
+  permissions     AIAssistantPermission[]
+  sessions        AIAssistantSession[]
+  executions      AIAssistantExecution[]
+
+  @@index([organizationId])
+  @@index([organizationId, enabled])
+}
+
+model AIAssistantCapability {
+  id          String      @id @default(uuid()) @map("_id")
+  assistantId String
+  assistant   AIAssistant @relation(fields: [assistantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  capability  String      // CRM, PROJECTS, TASKS, KNOWLEDGE, DOCUMENTS, MEETINGS, CONTRACTS, PROPOSALS, WORKFLOW_ENGINE, GLOBAL_SEARCH, MEMORY, NOTIFICATIONS
+  enabled     Boolean     @default(true)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([assistantId, capability])
+  @@index([assistantId])
+}
+
+model AIAssistantPermission {
+  id          String      @id @default(uuid()) @map("_id")
+  assistantId String
+  assistant   AIAssistant @relation(fields: [assistantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  permission  String      // READ, WRITE, EXECUTE_ACTIONS, ACCESS_FINANCIAL_DATA, ACCESS_SENSITIVE_INFO, ORGANIZATION_SCOPE, WORKSPACE_SCOPE
+  granted     Boolean     @default(true)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([assistantId, permission])
+  @@index([assistantId])
+}
+
+model AIAssistantSession {
+  id               String       @id @default(uuid()) @map("_id")
+  assistantId      String
+  assistant        AIAssistant  @relation(fields: [assistantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId           String
+  user             User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title            String       @default("AI Assistant Conversation")
+  currentContext   String?      // JSON string representation of current workspace/module context
+  selectedProvider String?      @default("OPENAI")
+  selectedModel    String?      @default("gpt-4o")
+  promptUsed       String?
+  status           String       @default("ACTIVE") // ACTIVE, COMPLETED, FAILED, PAUSED
+
+  startedAt        DateTime     @default(now())
+  endedAt          DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  executions       AIAssistantExecution[]
+
+  @@index([assistantId])
+  @@index([organizationId, userId])
+  @@index([status])
+}
+
+model AIAssistantExecution {
+  id                 String              @id @default(uuid()) @map("_id")
+  assistantId        String
+  assistant          AIAssistant         @relation(fields: [assistantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sessionId          String?
+  session            AIAssistantSession? @relation(fields: [sessionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId     String
+  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  userPrompt         String
+  assistantResponse  String
+  tokens             Int                 @default(0)
+  latencyMs          Int                 @default(0)
+  provider           String
+  model              String
+  memoryUsed         String?             // JSON string array of memory keys/titles used
+  promptTemplateUsed String?
+  toolsRequested     String?             // JSON string array of tools requested/simulated
+  executionStatus    String              @default("SUCCESS") // SUCCESS, FAILED, TIMED_OUT, INTERRUPTED
+
+  createdAt          DateTime            @default(now())
+
+  @@index([assistantId])
+  @@index([sessionId])
+  @@index([organizationId, userId])
+  @@index([executionStatus])
+}
+
+// ==========================================
+// ENTERPRISE TOOL CALLING FRAMEWORK
+// ==========================================
+
+model AIToolCategory {
+  id          String   @id @default(uuid()) @map("_id")
+  name        String   @unique // CRM, PROJECTS, KNOWLEDGE, DOCUMENTS, WORKFLOW, NOTIFICATIONS, SEARCH
+  displayName String
+  description String?
+  icon        String?
+  color       String?  @default("bg-blue-500")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tools       AITool[]
+}
+
+model AITool {
+  id              String   @id @default(uuid()) @map("_id")
+  key             String // e.g. crm_create_company, projects_create_task
+  name            String
+  description     String
+
+  categoryId      String
+  category        AIToolCategory @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  jsonSchema      String   // JSON schema payload string
+  requiredParams  String   @default("[]") // JSON string array of required parameter names
+  optionalParams  String   @default("[]") // JSON string array of optional parameter names
+  validationRules String   @default("{}") // JSON validation constraints
+
+  enabled         Boolean  @default(true)
+  riskLevel       String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  parameters      AIToolParameter[]
+  permissions     AIToolPermission[]
+  executions      AIToolExecution[]
+  agentAccesses   AIAgentToolAccess[]
+
+  @@index([categoryId])
+  @@index([key])
+  @@index([enabled])
+}
+
+model AIToolParameter {
+  id              String   @id @default(uuid()) @map("_id")
+  toolId          String
+  tool            AITool   @relation(fields: [toolId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name            String   // Field name e.g. companyName, title, email
+  type            String   // STRING, NUMBER, BOOLEAN, OBJECT, ARRAY
+  description     String?
+  required        Boolean  @default(false)
+  defaultValue    String?
+  validationRegex String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([toolId, name])
+  @@index([toolId])
+}
+
+model AIToolPermission {
+  id               String   @id @default(uuid()) @map("_id")
+  toolId           String
+  tool             AITool   @relation(fields: [toolId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  role             String   // SUPER_ADMIN, ADMIN, MANAGER, EMPLOYEE, CLIENT
+  allowed          Boolean  @default(true)
+  requiresApproval Boolean  @default(false)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([toolId, role])
+  @@index([toolId])
+}
+
+model AIToolExecution {
+  id             String       @id @default(uuid()) @map("_id")
+  toolId         String
+  tool           AITool       @relation(fields: [toolId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String?
+  workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assistantId    String?
+
+  inputParams    String       // JSON string input parameters
+  outputResult   String       // JSON string mock structured output response
+  status         String       @default("SUCCESS") // SUCCESS, FAILED, PERMISSION_DENIED, VALIDATION_ERROR
+  errorMessage   String?
+  latencyMs      Int          @default(0)
+  isMock         Boolean      @default(true)
+
+  createdAt      DateTime     @default(now())
+
+  @@index([toolId])
+  @@index([organizationId, userId])
+  @@index([status])
+}
+
+// ==========================================
+// ENTERPRISE RAG (RETRIEVAL-AUGMENTED GENERATION) ENGINE
+// ==========================================
+
+model RAGIndex {
+  id                String       @id @default(uuid()) @map("_id")
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name              String       @default("Enterprise Workspace RAG Index")
+  description       String?
+  chunkStrategy     String       @default("PARAGRAPH") // DOCUMENT, MARKDOWN, PARAGRAPH, SENTENCE
+  chunkSize         Int          @default(512)
+  chunkOverlap       Int          @default(64)
+  embeddingProvider String       @default("OPENAI") // OPENAI, GEMINI, CLAUDE, OLLAMA, OPENROUTER
+  embeddingModel    String       @default("text-embedding-3-small")
+  dimensions        Int          @default(1536)
+
+  status            String       @default("READY") // READY, INDEXING, FAILED
+  totalDocuments    Int          @default(0)
+  totalChunks       Int          @default(0)
+  lastIndexedAt     DateTime?
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  documents         RAGDocument[]
+  searches          RAGSearch[]
+  agentKnowledgeScopes AIAgentKnowledgeScope[]
+
+  @@index([organizationId])
+}
+
+model RAGDocument {
+  id             String       @id @default(uuid()) @map("_id")
+  indexId        String
+  index          RAGIndex     @relation(fields: [indexId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  sourceType     String       // CRM_COMPANY, CRM_CONTACT, CRM_LEAD, CRM_OPPORTUNITY, CRM_MEETING, CRM_CONTRACT, PROJECT, TASK, KNOWLEDGE, DOCUMENT, WORKFLOW_LOG, ACTIVITY_LOG, NOTIFICATION
+  sourceId       String
+  title          String
+  content        String
+  metadataJson   String       @default("{}") // JSON string metadata
+  checksum       String?
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  chunks         RAGChunk[]
+
+  @@index([indexId])
+  @@index([organizationId, sourceType])
+  @@index([sourceId])
+}
+
+model RAGChunk {
+  id            String       @id @default(uuid()) @map("_id")
+  documentId    String
+  document      RAGDocument  @relation(fields: [documentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  chunkIndex    Int
+  content       String
+  tokenCount    Int          @default(0)
+  metadataJson  String       @default("{}")
+
+  createdAt     DateTime     @default(now())
+
+  embedding     RAGEmbedding?
+  searchResults RAGSearchResult[]
+
+  @@index([documentId])
+  @@index([chunkIndex])
+}
+
+model RAGEmbedding {
+  id                 String   @id @default(uuid()) @map("_id")
+  chunkId            String   @unique
+  chunk              RAGChunk @relation(fields: [chunkId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  provider           String   @default("OPENAI")
+  model              String   @default("text-embedding-3-small")
+  dimensions         Int      @default(1536)
+  vectorPlaceholder  String   // JSON string array of 1536 float values
+
+  createdAt          DateTime @default(now())
+}
+
+model RAGSearch {
+  id             String       @id @default(uuid()) @map("_id")
+  indexId        String
+  index          RAGIndex     @relation(fields: [indexId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  query          String
+  searchType     String       @default("HYBRID") // KEYWORD, SEMANTIC, HYBRID
+  sourceFilters  String       @default("[]") // JSON string array of sources
+  topK           Int          @default(5)
+  executionTimeMs Int         @default(0)
+
+  createdAt      DateTime     @default(now())
+
+  results        RAGSearchResult[]
+
+  @@index([indexId])
+  @@index([organizationId, userId])
+}
+
+model RAGSearchResult {
+  id             String    @id @default(uuid()) @map("_id")
+  searchId       String
+  search         RAGSearch @relation(fields: [searchId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  chunkId        String
+  chunk          RAGChunk  @relation(fields: [chunkId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  relevanceScore Float
+  rank           Int
+
+  createdAt      DateTime  @default(now())
+
+  @@index([searchId])
+}
+
+// ==========================================
+// ENTERPRISE MULTI-AGENT ORCHESTRATOR
+// ==========================================
+
+model AgentWorkflow {
+  id              String       @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title           String
+  description     String?
+  userPrompt      String
+  finalResponse   String?
+  status          String       @default("PENDING") // PENDING, PLANNING, EXECUTING, COMPLETED, FAILED, CANCELLED
+  executionPlan   String?      // JSON: planned sequence of agents
+  errorMessage    String?
+
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  steps           AgentWorkflowStep[]
+  delegations     AgentDelegation[]
+  conversations   AgentConversation[]
+  executionGraph  AgentExecutionGraph?
+  sharedContexts  AgentSharedContext[]
+
+  @@index([organizationId])
+  @@index([organizationId, userId])
+  @@index([status])
+}
+
+model AgentWorkflowStep {
+  id              String        @id @default(uuid()) @map("_id")
+  workflowId      String
+  workflow        AgentWorkflow @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  stepOrder       Int
+  agentKey        String        // sales_agent, project_manager_agent, etc.
+  agentName       String
+  task            String
+  inputData       String?       // JSON
+  outputData      String?       // JSON
+  status          String        @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, SKIPPED
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  latencyMs       Int           @default(0)
+
+  createdAt       DateTime      @default(now())
+
+  @@index([workflowId])
+  @@index([workflowId, stepOrder])
+}
+
+model AgentDelegation {
+  id                String         @id @default(uuid()) @map("_id")
+  workflowId        String
+  workflow          AgentWorkflow  @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentDelegationId String?
+  parentDelegation  AgentDelegation? @relation("AgentDelegationParent", fields: [parentDelegationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  fromAgentKey      String
+  fromAgentName     String
+  toAgentKey        String
+  toAgentName       String
+  taskDescription   String
+  contextData       String?       // JSON: shared context payload
+  responseData      String?       // JSON: delegation result
+  status            String        @default("PENDING") // PENDING, ACCEPTED, COMPLETED, FAILED, REJECTED
+  priority          Int           @default(0)
+
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime      @default(now())
+
+  childDelegations  AgentDelegation[] @relation("AgentDelegationParent")
+
+  @@index([workflowId])
+  @@index([fromAgentKey])
+  @@index([toAgentKey])
+  @@index([status])
+}
+
+model AgentConversation {
+  id              String        @id @default(uuid()) @map("_id")
+  workflowId      String
+  workflow        AgentWorkflow @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  fromAgent       String
+  fromAgentName   String
+  toAgent         String
+  toAgentName     String
+  message         String
+  messageType     String        @default("TEXT") // TEXT, QUERY, RESPONSE, RESULT, ERROR, COORDINATION
+  metadataJson    String?       @default("{}")
+
+  createdAt       DateTime      @default(now())
+
+  @@index([workflowId])
+  @@index([workflowId, createdAt])
+}
+
+model AgentExecutionGraph {
+  id              String        @id @default(uuid()) @map("_id")
+  workflowId      String        @unique
+  workflow        AgentWorkflow @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  graphData       String        // JSON: nodes & edges representation
+  totalSteps      Int           @default(0)
+  completedSteps  Int           @default(0)
+  failedSteps     Int           @default(0)
+  totalLatencyMs  Int           @default(0)
+  status          String        @default("PENDING")
+
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model AgentSharedContext {
+  id              String        @id @default(uuid()) @map("_id")
+  workflowId      String
+  workflow        AgentWorkflow @relation(fields: [workflowId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  contextKey      String        // crm_data, projects, knowledge, meetings, contracts, tasks, memory, rag_context, prompt_templates
+  contextType     String        // CRM, PROJECT, KNOWLEDGE, MEETING, CONTRACT, TASK, MEMORY, RAG, PROMPT
+  data            String        // JSON payload
+  sourceAgentKey  String?
+  version         Int           @default(1)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([workflowId, contextKey])
+  @@index([workflowId])
+}
+// ==========================================
+// ENTERPRISE SPECIALIZED AI AGENTS FRAMEWORK
+// ==========================================
+
+model AIAgent {
+  id              String       @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  key             String       // sales_agent, project_manager_agent, knowledge_assistant, meeting_assistant, finance_assistant, ceo_executive_assistant, or custom_key
+  name            String
+  role            String       // e.g. "Sales Intelligence & Lead Qualification Specialist"
+  department      String       // Sales, Project Management, Knowledge, Meetings, Finance, Executive, Custom
+  description     String?
+  avatar          String?
+  systemPrompt    String?
+
+  defaultProvider String       @default("OPENAI") // OPENAI, ANTHROPIC, GOOGLE, LOCAL
+  defaultModel    String       @default("gpt-4o")
+  temperature     Float        @default(0.7)
+  maxTokens       Int          @default(4096)
+  enabled         Boolean      @default(true)
+  isCustom        Boolean      @default(false)
+
+  createdBy       String?
+  creator         User?        @relation("AIAgentCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy       String?
+  updater         User?        @relation("AIAgentUpdatedBy", fields: [updatedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  isDeleted       Boolean      @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  capabilities    AIAgentCapability[]
+  prompts         AIAgentPrompt[]
+  executions      AIAgentExecution[]
+  knowledgeScopes AIAgentKnowledgeScope[]
+  toolAccesses    AIAgentToolAccess[]
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@index([department])
+  @@index([enabled])
+}
+
+model AIAgentCapability {
+  id          String   @id @default(uuid()) @map("_id")
+  agentId     String
+  agent       AIAgent  @relation(fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  capability  String   // e.g. LEAD_QUALIFICATION, PIPELINE_ANALYSIS, RISK_DETECTION, AGENDA_GENERATION, REVENUE_SUMMARIES, EXECUTIVE_DASHBOARD_SUMMARIES
+  displayName String
+  description String?
+  enabled     Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([agentId, capability])
+  @@index([agentId])
+}
+
+model AIAgentPrompt {
+  id               String          @id @default(uuid()) @map("_id")
+  agentId          String
+  agent            AIAgent         @relation(fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  promptTemplateId String?
+  promptTemplate   PromptTemplate? @relation(fields: [promptTemplateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  promptType       String          @default("SYSTEM") // SYSTEM, TASK, CRITIC, DELEGATION
+  name             String
+  content          String
+  isActive         Boolean         @default(true)
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([agentId])
+  @@index([promptTemplateId])
+}
+
+model AIAgentKnowledgeScope {
+  id           String    @id @default(uuid()) @map("_id")
+  agentId      String
+  agent        AIAgent   @relation(fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ragIndexId   String?
+  ragIndex     RAGIndex? @relation(fields: [ragIndexId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  scopeType    String    // CRM_COMPANIES, CRM_CONTACTS, CRM_LEADS, CRM_OPPORTUNITIES, CRM_MEETINGS, CRM_CONTRACTS, CRM_PROPOSALS, PROJECTS, TASKS, MILESTONES, TIME_TRACKING, RESOURCES, KNOWLEDGE_BASE, DOCUMENTS, RAG_ENGINE, PARTICIPANTS, PROJECT_BUDGETS, ENTIRE_ORGANIZATION
+  resourceId   String?
+  allowed      Boolean   @default(true)
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([agentId, scopeType])
+  @@index([agentId])
+}
+
+model AIAgentToolAccess {
+  id               String   @id @default(uuid()) @map("_id")
+  agentId          String
+  agent            AIAgent  @relation(fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  toolId           String?
+  tool             AITool?  @relation(fields: [toolId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  toolKey          String   // e.g. crm_create_lead, projects_create_task, rag_search, knowledge_search
+  allowed          Boolean  @default(true)
+  requiresApproval Boolean  @default(false)
+
+  createdAt        DateTime @default(now())
+
+  @@unique([agentId, toolKey])
+  @@index([agentId])
+}
+
+model AIAgentExecution {
+  id                 String       @id @default(uuid()) @map("_id")
+  agentId            String
+  agent              AIAgent      @relation(fields: [agentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId             String
+  user               User         @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  userPrompt         String
+  agentResponse      String
+  capabilityUsed     String?
+  toolsExecuted      String       @default("[]") // JSON string array
+  knowledgeRetrieved String       @default("[]") // JSON string array
+  memoriesUsed       String       @default("[]") // JSON string array
+  provider           String
+  model              String
+  tokens             Int          @default(0)
+  latencyMs          Int          @default(0)
+  status             String       @default("SUCCESS") // SUCCESS, FAILED, PERMISSION_DENIED
+
+  createdAt          DateTime     @default(now())
+
+  @@index([agentId])
+  @@index([organizationId, userId])
+  @@index([status])
+}
+
+// ==========================================
+// ENTERPRISE EXECUTIVE AI DASHBOARD
+// ==========================================
+
+model ExecutiveDashboard {
+  id                  String       @id @default(uuid()) @map("_id")
+  organizationId      String
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  healthScore         Int          @default(94)
+  aiConfidenceScore   Float        @default(96.5)
+  summaryText         String?
+  dailyHighlightsJson String       @default("[]") // JSON string array
+
+  lastCalculatedAt    DateTime     @default(now())
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  insights            ExecutiveInsight[]
+  metrics             ExecutiveMetric[]
+  alerts              ExecutiveAlert[]
+  predictions         ExecutivePrediction[]
+
+  @@index([organizationId])
+}
+
+model ExecutiveInsight {
+  id                String             @id @default(uuid()) @map("_id")
+  dashboardId       String
+  dashboard         ExecutiveDashboard @relation(fields: [dashboardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId    String
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  category          String             // HEALTH_SUMMARY, SALES_RECOMMENDATION, PROJECT_RISK, RESOURCE_RISK, CONTRACT_EXPIRATION, MISSED_OPPORTUNITY, KNOWLEDGE_GAP, EXECUTIVE_RECOMMENDATION, WEEKLY_ACTION
+  title             String
+  description       String
+  impact            String             @default("HIGH") // CRITICAL, HIGH, MEDIUM, LOW
+  actionable        Boolean            @default(true)
+  recommendedAction String?
+  metadataJson      String             @default("{}")
+  isResolved        Boolean            @default(false)
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([dashboardId])
+  @@index([organizationId, category])
+}
+
+model ExecutiveMetric {
+  id             String             @id @default(uuid()) @map("_id")
+  dashboardId    String
+  dashboard      ExecutiveDashboard @relation(fields: [dashboardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  module         String             // OVERVIEW, CRM, PROJECTS, FINANCE, TEAM, KNOWLEDGE, WORKFLOWS
+  metricKey      String
+  metricName     String
+  value          Float
+  unit           String?
+  changePercent  Float              @default(0.0)
+  trend          String             @default("UP") // UP, DOWN, NEUTRAL
+  historicalJson String             @default("[]") // JSON trend array
+
+  createdAt      DateTime           @default(now())
+
+  @@index([dashboardId])
+  @@index([organizationId, module])
+}
+
+model ExecutiveAlert {
+  id             String             @id @default(uuid()) @map("_id")
+  dashboardId    String
+  dashboard      ExecutiveDashboard @relation(fields: [dashboardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  severity       String             @default("WARNING") // CRITICAL, WARNING, INFO
+  title          String
+  message        String
+  sourceModule   String             // CRM, PROJECTS, FINANCE, RESOURCES, WORKFLOWS, CONTRACTS
+  actionUrl      String?
+  isAcknowledged Boolean            @default(false)
+
+  createdAt      DateTime           @default(now())
+
+  @@index([dashboardId])
+  @@index([organizationId, severity])
+}
+
+model ExecutivePrediction {
+  id                 String             @id @default(uuid()) @map("_id")
+  dashboardId        String
+  dashboard          ExecutiveDashboard @relation(fields: [dashboardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organizationId     String
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  targetMetric       String             // REVENUE_Q3, CLIENT_RETENTION, SPRINT_VELOCITY, BUDGET_CONSUMPTION
+  predictedValue     Float
+  confidenceRangeMin Float
+  confidenceRangeMax Float
+  horizon            String             @default("30_DAYS") // 7_DAYS, 30_DAYS, 90_DAYS, 1_YEAR
+  rationale          String
+
+  createdAt          DateTime           @default(now())
+
+  @@index([dashboardId])
+  @@index([organizationId])
+}
+
+model CommunicationProvider {
+  id              String    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name            String
+  channel         String    // EMAIL, SLACK, TEAMS, DISCORD, SMS, PUSH, WEBHOOK
+  providerType    String    // SENDGRID, SMTP, SLACK_API, TEAMS_WEBHOOK, DISCORD_WEBHOOK, TWILIO, FCM, APNS, CUSTOM
+  config          String?   // JSON: api keys, endpoints, credentials
+  isEnabled       Boolean   @default(true)
+  isDefault       Boolean   @default(false)
+  priority        Int       @default(0) // failover priority
+
+  isDeleted       Boolean   @default(false)
+  deletedAt       DateTime?
+  createdById     String?
+  createdBy       User?     @relation("CommunicationProviderCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages        CommunicationMessage[]
+  deliveries      CommunicationDelivery[]
+
+  @@index([organizationId, channel])
+  @@index([organizationId, isEnabled])
+}
+
+model CommunicationTemplate {
+  id              String    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name            String
+  description     String?
+  channel         String    // EMAIL, SLACK, TEAMS, DISCORD, SMS, PUSH
+  subject         String?   // email subject or message title
+  body            String    // template body with {{variables}}
+  bodyFormat      String    @default("HTML") // HTML, MARKDOWN, PLAIN_TEXT
+  variables       String?   // JSON array of variable names
+  attachments     String?   // JSON array of attachment configs
+
+  isDeleted       Boolean   @default(false)
+  deletedAt       DateTime?
+  createdById     String?
+  createdBy       User?     @relation("CommunicationTemplateCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages        CommunicationMessage[]
+
+  @@index([organizationId, channel])
+}
+
+model CommunicationMessage {
+  id              String    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  channel         String    // EMAIL, SLACK, TEAMS, DISCORD, SMS, PUSH, WEBHOOK
+  subject         String?
+  body            String
+  bodyFormat      String    @default("HTML")
+  senderId        String?   // user who sent
+  sender          User?     @relation(fields: [senderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  recipients      String    // JSON array of {address, name, type}
+  cc              String?   // JSON array
+  bcc             String?   // JSON array
+  attachments     String?   // JSON array
+
+  status          String    @default("PENDING") // PENDING, SENDING, DELIVERED, FAILED, BOUNCED, READ
+  priority        String    @default("NORMAL")
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  errorMessage    String?
+
+  externalId      String?   // provider message ID
+  providerId      String?
+  provider        CommunicationProvider? @relation(fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  templateId      String?
+  template        CommunicationTemplate? @relation(fields: [templateId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  relatedEntityType String?
+  relatedEntityId String?
+  retryCount      Int       @default(0)
+  maxRetries      Int       @default(3)
+  batchId         String?   // for bulk messaging grouping
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  deliveries      CommunicationDelivery[]
+  audits          CommunicationAudit[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, channel])
+  @@index([organizationId, createdAt])
+  @@index([batchId])
+  @@index([relatedEntityType, relatedEntityId])
+}
+
+model CommunicationDelivery {
+  id              String    @id @default(uuid()) @map("_id")
+  messageId       String
+  message         CommunicationMessage @relation(fields: [messageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  recipient       String
+  channel         String
+  status          String    @default("PENDING") // PENDING, SENDING, DELIVERED, FAILED, BOUNCED, READ
+  providerId      String?
+  provider        CommunicationProvider? @relation(fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  attemptCount    Int       @default(0)
+  lastAttemptAt   DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  errorMessage    String?
+  providerMessageId String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([messageId])
+}
+
+model CommunicationWebhook {
+  id              String    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name            String
+  url             String
+  secret          String?
+  events          String    // JSON array of event types
+  headers         String?   // JSON object of custom headers
+  isEnabled       Boolean   @default(true)
+  retryCount      Int       @default(3)
+  timeoutMs       Int       @default(10000)
+  lastTriggeredAt DateTime?
+  lastResponse    String?
+  lastStatusCode  Int?
+
+  isDeleted       Boolean   @default(false)
+  deletedAt       DateTime?
+  createdById     String?
+  createdBy       User?     @relation("CommunicationWebhookCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, isEnabled])
+}
+
+model CommunicationSubscription {
+  id              String    @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  event           String    // e.g. lead.created, task.assigned, meeting.scheduled
+  channels        String    // JSON array of channels
+  isEnabled       Boolean   @default(true)
+  filters         String?   // JSON: conditions to filter events
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([organizationId, event])
+  @@index([userId])
+  @@unique([userId, event])
+}
+
+model CommunicationAudit {
+  id              String    @id @default(uuid()) @map("_id")
+  messageId       String?
+  message         CommunicationMessage? @relation(fields: [messageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  action          String    // SENT, DELIVERED, FAILED, BOUNCED, READ, RETRIED, PROVIDER_FAILOVER, TEMPLATE_RENDERED
+  channel         String?
+  providerId      String?
+  details         String?   // JSON details
+  metadata        String?   // JSON extra
+
+  createdAt       DateTime  @default(now())
+
+  @@index([messageId])
+}
+
+// ==========================================
+// ENTERPRISE ANALYTICS & DECISION INTELLIGENCE PLATFORM
+// ==========================================
+
+model AnalyticsDashboard {
+  id             String       @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String?
+  workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name           String
+  description    String?
+  category       String       @default("GENERAL") // EXECUTIVE, CRM, PROJECTS, AI, COMMUNICATIONS, WORKFLOWS, CUSTOM
+  isDefault      Boolean      @default(false)
+  isPublic       Boolean      @default(false)
+  layoutConfig   String?      // JSON string layout configuration
+
+  createdBy      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  widgets        AnalyticsWidget[]
+
+  @@index([organizationId])
+  @@index([organizationId, category])
+}
+
+model AnalyticsWidget {
+  id          String             @id @default(uuid()) @map("_id")
+  dashboardId String
+  dashboard   AnalyticsDashboard @relation(fields: [dashboardId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title       String
+  type        String             // METRIC_CARD, CHART_LINE, CHART_BAR, CHART_PIE, HEATMAP, TABLE, RADAR, GAUGE
+  metricKey   String?
+  datasetId   String?
+  dataset     AnalyticsDataset?  @relation(fields: [datasetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  config      String?            // JSON config string
+
+  positionX   Int                @default(0)
+  positionY   Int                @default(0)
+  width       Int                @default(4)
+  height      Int                @default(3)
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([dashboardId])
+}
+
+model AnalyticsMetric {
+  id                 String       @id @default(uuid()) @map("_id")
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId        String?
+  workspace          Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  category           String       // CRM, PROJECTS, PRODUCTIVITY, KNOWLEDGE, DOCUMENTS, WORKFLOWS, AUTOMATION, AI, COMMUNICATIONS, HEALTH
+  metricKey          String
+  name               String
+  value              Float
+  previousValue      Float        @default(0.0)
+  unit               String?
+  changePercent      Float        @default(0.0)
+  trend              String       @default("STABLE") // UP, DOWN, STABLE
+  period             String       @default("DAILY")  // DAILY, WEEKLY, MONTHLY, QUARTERLY
+  historicalDataJson String       @default("[]")
+
+  timestamp          DateTime     @default(now())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, metricKey])
+  @@index([organizationId, category])
+}
+
+model AnalyticsSnapshot {
+  id               String       @id @default(uuid()) @map("_id")
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title            String
+  type             String       @default("DAILY") // DAILY, WEEKLY, MONTHLY, MANUAL
+  snapshotDataJson String
+  healthScore      Float        @default(100.0)
+
+  takenAt          DateTime     @default(now())
+  createdAt        DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([organizationId, type])
+}
+
+model AnalyticsReport {
+  id             String       @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String?
+  workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title          String
+  type           String       // EXECUTIVE_SUMMARY, DEPARTMENT_SUMMARY, WEEKLY, MONTHLY, CUSTOM
+  status         String       @default("GENERATED") // GENERATED, DRAFT, ARCHIVED
+  summaryText    String
+  sectionsJson   String       @default("[]")
+  metricsJson    String       @default("{}")
+  format         String       @default("JSON") // JSON, HTML, PDF, CSV
+
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, type])
+}
+
+model AnalyticsForecast {
+  id                   String       @id @default(uuid()) @map("_id")
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId          String?
+  workspace            Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  targetMetric         String       // REVENUE, PROJECT_COMPLETION, CONTRACT_RENEWALS, LEAD_CONVERSIONS, RESOURCE_UTILIZATION, RISK_SCORE, BUDGET_CONSUMPTION
+  predictedValue       Float
+  currentValue         Float
+  confidenceRangeMin   Float
+  confidenceRangeMax   Float
+  confidenceScore      Float        @default(90.0)
+  horizon              String       @default("30_DAYS") // 7_DAYS, 30_DAYS, 90_DAYS, 1_YEAR
+  trend                String       @default("STABLE")  // INCREASING, DECREASING, STABLE
+  rationale            String
+  historicalTrendJson  String       @default("[]")
+  forecastPointsJson   String       @default("[]")
+
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, targetMetric])
+}
+
+model AnalyticsAnomaly {
+  id               String       @id @default(uuid()) @map("_id")
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId      String?
+  workspace        Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  metricKey        String
+  metricName       String
+  category         String       // CRM, PROJECTS, WORKFLOWS, AI, COMMUNICATIONS, HEALTH
+  severity         String       @default("MEDIUM") // CRITICAL, HIGH, MEDIUM, LOW
+  expectedValue    Float
+  actualValue      Float
+  deviationPercent Float
+  description      String
+
+  detectedAt       DateTime     @default(now())
+  isResolved       Boolean      @default(false)
+  resolvedAt       DateTime?
+  createdAt        DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([organizationId, isResolved])
+}
+
+model AnalyticsRecommendation {
+  id             String       @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId    String?
+  workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  category       String       // GROWTH, PRODUCTIVITY, BOTTLENECK, MISSED_OPPORTUNITY, RISK_MITIGATION
+  title          String
+  description    String
+  impact         String       @default("HIGH") // CRITICAL, HIGH, MEDIUM, LOW
+  actionable     Boolean      @default(true)
+  actionStep     String?
+  estimatedRoi   String?
+  status         String       @default("ACTIVE") // ACTIVE, APPLIED, DISMISSED
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model AnalyticsDataset {
+  id                     String            @id @default(uuid()) @map("_id")
+  organizationId         String
+  organization           Organization      @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId            String?
+  workspace              Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name                   String
+  description            String?
+  sourceModule           String            // CRM, PROJECTS, WORKFLOWS, COMMUNICATIONS, AI, DOCUMENTS, KNOWLEDGE
+  queryConfigJson        String            @default("{}")
+  dataJson               String            @default("[]")
+  refreshIntervalMinutes Int               @default(60)
+
+  lastRefreshedAt        DateTime          @default(now())
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  widgets                AnalyticsWidget[]
+
+  @@index([organizationId])
+  @@index([organizationId, sourceModule])
+}
+
+// ==========================================
+// ENTERPRISE INTEGRATION HUB PLATFORM
+// ==========================================
+
+model IntegrationProvider {
+  id                    String                  @id @default(uuid()) @map("_id")
+  key                   String                  @unique // GOOGLE_WORKSPACE, MS_365, SLACK, MS_TEAMS, ZOOM, GITHUB, GITLAB, JIRA, TRELLO, ASANA, NOTION, STRIPE, PAYPAL, HUBSPOT, SALESFORCE, ZAPIER, MAKE, WEBHOOK_ENGINE, REST_API
+  name                  String
+  category              String                  // AUTH, CRM, PROJECT, PAYMENT, COMMUNICATION, AUTOMATION, STORAGE
+  description           String?
+  iconUrl               String?
+  authType              String                  @default("OAUTH2") // OAUTH2, API_KEY, WEBHOOK, BASIC
+  docUrl                String?
+  isVerified            Boolean                 @default(true)
+  isEnabled             Boolean                 @default(true)
+  supportedCapabilities String                  @default("[]") // JSON string array
+  configSchemaJson      String                  @default("{}") // JSON schema for settings
+
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  connections           IntegrationConnection[]
+  templates             IntegrationTemplate[]
+
+  @@index([category])
+}
+
+model IntegrationConnection {
+  id                   String                  @id @default(uuid()) @map("_id")
+  organizationId       String
+  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  workspaceId          String?
+  workspace            Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  providerId           String
+  provider             IntegrationProvider     @relation(fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name                 String
+  status               String                  @default("CONNECTED") // CONNECTED, DISCONNECTED, ERROR, SYNCING, EXPIRED
+  authType             String                  @default("OAUTH2")
+  externalAccountId    String?
+  externalAccountEmail String?
+  scopes               String                  @default("[]") // JSON array of granted scopes
+  settingsJson         String                  @default("{}") // Custom config settings JSON
+  healthStatus         String                  @default("HEALTHY") // HEALTHY, DEGRADED, UNHEALTHY
+
+  lastSyncedAt         DateTime?
+  lastError            String?
+  createdById          String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  credentials          IntegrationCredential[]
+  syncJobs             IntegrationSyncJob[]
+  logs                 IntegrationLog[]
+  webhooks             IntegrationWebhook[]
+  events               IntegrationEvent[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([providerId])
+}
+
+model IntegrationCredential {
+  id            String                @id @default(uuid()) @map("_id")
+  connectionId  String
+  connection    IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  type          String                // ACCESS_TOKEN, REFRESH_TOKEN, API_KEY, SECRET_KEY, WEBHOOK_SECRET
+  encryptedData String                // AES-256 encrypted payload
+  iv            String                // AES Initialization Vector
+  expiresAt     DateTime?
+  isRevoked     Boolean               @default(false)
+
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([connectionId])
+  @@index([connectionId, type])
+}
+
+model IntegrationSyncJob {
+  id               String                @id @default(uuid()) @map("_id")
+  organizationId   String
+  organization     Organization          @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  connectionId     String
+  connection       IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  syncType         String                @default("INCREMENTAL") // FULL, INCREMENTAL, MANUAL, SCHEDULED
+  status           String                @default("PENDING")     // PENDING, IN_PROGRESS, COMPLETED, FAILED
+  entityType       String                // CONTACTS, ISSUES, MESSAGES, INVOICES, DOCUMENTS, CALENDAR_EVENTS
+  recordsProcessed Int                   @default(0)
+  recordsFailed    Int                   @default(0)
+  errorMessage     String?
+
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  logs             IntegrationLog[]
+
+  @@index([organizationId])
+  @@index([connectionId])
+  @@index([status])
+}
+
+model IntegrationLog {
+  id             String                 @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  connectionId   String?
+  connection     IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  syncJobId      String?
+  syncJob        IntegrationSyncJob?    @relation(fields: [syncJobId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  level          String                 @default("INFO") // INFO, WARN, ERROR, DEBUG
+  action         String                 // OAUTH_CONNECT, TOKEN_REFRESH, SYNC_START, SYNC_COMPLETE, WEBHOOK_RECEIVED, API_ERROR
+  message        String
+  metadataJson   String                 @default("{}")
+
+  createdAt      DateTime               @default(now())
+
+  @@index([organizationId])
+  @@index([connectionId])
+  @@index([level])
+}
+
+model IntegrationWebhook {
+  id              String                 @id @default(uuid()) @map("_id")
+  organizationId  String
+  organization    Organization           @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  connectionId    String?
+  connection      IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name            String
+  webhookUrl      String
+  secretKey       String?
+  events          String                 // JSON string array of subscribed events
+  isEnabled       Boolean                @default(true)
+
+  lastTriggeredAt DateTime?
+  totalDelivered  Int                    @default(0)
+  totalFailed     Int                    @default(0)
+
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  eventsList      IntegrationEvent[]
+
+  @@index([organizationId])
+  @@index([connectionId])
+}
+
+model IntegrationEvent {
+  id             String                 @id @default(uuid()) @map("_id")
+  organizationId String
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  connectionId   String?
+  connection     IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  webhookId      String?
+  webhook        IntegrationWebhook?    @relation(fields: [webhookId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  eventType      String                 // github.push, stripe.payment_intent.succeeded, slack.message, etc.
+  payloadJson    String
+  status         String                 @default("PROCESSED") // RECEIVED, PROCESSED, FAILED, RETRYING
+
+  processedAt    DateTime?
+  errorMessage   String?
+  createdAt      DateTime               @default(now())
+
+  @@index([organizationId])
+  @@index([connectionId])
+  @@index([eventType])
+}
+
+model IntegrationTemplate {
+  id                 String               @id @default(uuid()) @map("_id")
+  organizationId     String?
+  organization       Organization?        @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  providerId         String?
+  provider           IntegrationProvider? @relation(fields: [providerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  name               String
+  description        String?
+  category           String
+  configTemplateJson String               @default("{}")
+  isPublic           Boolean              @default(true)
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([category])
+}
+
+
+
+
+
+

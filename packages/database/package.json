@@ -1,0 +1,18 @@
+{
+  "name": "@blackdesk/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "@prisma/client": "^5.13.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.13.0"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "fix-schema": "node fix_mongodb_schema.js",
+    "push": "node fix_mongodb_schema.js && prisma db push",
+    "studio": "prisma studio"
+  }
+}
