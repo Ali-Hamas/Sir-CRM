@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Role } from '../../common/roles';
 
 @Injectable()
 export class TimeTrackingService {
@@ -11,17 +12,31 @@ export class TimeTrackingService {
     private notificationsService: NotificationsService,
   ) {}
 
-  async createTimeEntry(orgId: string, userId: string, data: any) {
+  private async resolveOrgId(orgIdOrSlug: string): Promise<string> {
+    const org = await this.prisma.organization.findFirst({
+      where: { OR: [{ id: orgIdOrSlug }, { slug: orgIdOrSlug }] },
+      select: { id: true },
+    });
+    return org ? org.id : orgIdOrSlug;
+  }
+
+  async createTimeEntry(orgId: string, userId: string, data: any, userRole?: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
+
+    if (userRole === Role.CLIENT) {
+      throw new ForbiddenException('Clients cannot create time entries');
+    }
+
     if (data.projectId) {
       const project = await this.prisma.project.findFirst({
-        where: { id: data.projectId, organizationId: orgId, isDeleted: false },
+        where: { id: data.projectId, organizationId: realOrgId, isDeleted: false },
       });
       if (!project) throw new NotFoundException('Project not found');
     }
 
     if (data.taskId) {
       const task = await this.prisma.task.findFirst({
-        where: { id: data.taskId, organizationId: orgId, isDeleted: false },
+        where: { id: data.taskId, organizationId: realOrgId, isDeleted: false },
       });
       if (!task) throw new NotFoundException('Task not found');
     }
@@ -29,7 +44,7 @@ export class TimeTrackingService {
     const entry = await this.prisma.timeEntry.create({
       data: {
         description: data.description || null,
-        date: new Date(data.date),
+        date: data.date ? new Date(data.date) : new Date(),
         startTime: data.startTime ? new Date(data.startTime) : null,
         endTime: data.endTime ? new Date(data.endTime) : null,
         duration: data.duration ? parseFloat(data.duration) : null,
@@ -38,7 +53,7 @@ export class TimeTrackingService {
         userId: data.userId || userId,
         projectId: data.projectId || null,
         taskId: data.taskId || null,
-        organizationId: orgId,
+        organizationId: realOrgId,
         createdById: userId,
         updatedBy: userId,
       },
@@ -51,7 +66,7 @@ export class TimeTrackingService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TIME_ENTRY_CREATED',
       module: 'TIME_TRACKING',
       entityType: 'TIME_ENTRY',
@@ -78,18 +93,31 @@ export class TimeTrackingService {
       page?: number;
       limit?: number;
     } = {},
+    currentUser?: { id: string; role: string },
   ) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const page = query.page || 1;
     const limit = query.limit || 50;
     const skip = (page - 1) * limit;
 
-    const where: any = { organizationId: orgId, isDeleted: false };
+    const where: any = { organizationId: realOrgId, isDeleted: false };
 
     if (query.status) where.status = query.status;
     if (query.billable !== undefined && query.billable !== '') where.billable = query.billable === 'true';
     if (query.projectId) where.projectId = query.projectId;
     if (query.taskId) where.taskId = query.taskId;
     if (query.userId) where.userId = query.userId;
+
+    if (currentUser?.role === Role.CLIENT) {
+      const clientRecord = await this.prisma.client.findFirst({
+        where: { organizationId: realOrgId, OR: [{ id: currentUser.id }, { companyId: currentUser.id }] },
+      });
+      if (clientRecord) {
+        where.project = { OR: [{ clientId: clientRecord.id }, { companyId: clientRecord.companyId }] };
+      } else {
+        where.userId = currentUser.id;
+      }
+    }
 
     if (query.startDate || query.endDate) {
       where.date = {};
@@ -132,7 +160,8 @@ export class TimeTrackingService {
     endDate?: string;
     projectId?: string;
   } = {}) {
-    const where: any = { userId, organizationId: orgId, isDeleted: false };
+    const realOrgId = await this.resolveOrgId(orgId);
+    const where: any = { userId, organizationId: realOrgId, isDeleted: false };
 
     if (query.projectId) where.projectId = query.projectId;
 
@@ -154,12 +183,18 @@ export class TimeTrackingService {
     const totalDuration = entries.reduce((sum, e) => sum + (e.duration || 0), 0);
     const billableDuration = entries.filter(e => e.billable).reduce((sum, e) => sum + (e.duration || 0), 0);
 
-    return { entries, totalDuration, billableDuration, nonBillableDuration: totalDuration - billableDuration };
+    return {
+      entries,
+      totalDuration: Math.round(totalDuration * 100) / 100,
+      billableDuration: Math.round(billableDuration * 100) / 100,
+      nonBillableDuration: Math.round((totalDuration - billableDuration) * 100) / 100,
+    };
   }
 
   async findOne(orgId: string, entryId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const entry = await this.prisma.timeEntry.findFirst({
-      where: { id: entryId, organizationId: orgId, isDeleted: false },
+      where: { id: entryId, organizationId: realOrgId, isDeleted: false },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true, profilePictureUrl: true } },
         project: { select: { id: true, projectName: true, projectCode: true } },
@@ -172,11 +207,22 @@ export class TimeTrackingService {
     return entry;
   }
 
-  async update(orgId: string, entryId: string, userId: string, data: any) {
+  async update(orgId: string, entryId: string, userId: string, data: any, userRole?: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.timeEntry.findFirst({
-      where: { id: entryId, organizationId: orgId, isDeleted: false },
+      where: { id: entryId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Time entry not found');
+
+    const isManagerOrAdmin = userRole === Role.SUPER_ADMIN || userRole === Role.ADMIN || userRole === Role.MANAGER;
+    if (!isManagerOrAdmin) {
+      if (existing.userId !== userId) {
+        throw new ForbiddenException('You can only edit your own time entries');
+      }
+      if (existing.status !== 'DRAFT' && existing.status !== 'REJECTED') {
+        throw new BadRequestException('Only draft or rejected entries can be edited');
+      }
+    }
 
     const updateData: any = {};
     if (data.description !== undefined) updateData.description = data.description;
@@ -185,7 +231,7 @@ export class TimeTrackingService {
     if (data.endTime !== undefined) updateData.endTime = data.endTime ? new Date(data.endTime) : null;
     if (data.duration !== undefined) updateData.duration = data.duration ? parseFloat(data.duration) : null;
     if (data.billable !== undefined) updateData.billable = data.billable;
-    if (data.status !== undefined) updateData.status = data.status;
+    if (data.status !== undefined && isManagerOrAdmin) updateData.status = data.status;
     if (data.projectId !== undefined) updateData.projectId = data.projectId || null;
     if (data.taskId !== undefined) updateData.taskId = data.taskId || null;
     updateData.updatedBy = userId;
@@ -202,7 +248,7 @@ export class TimeTrackingService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TIME_ENTRY_UPDATED',
       module: 'TIME_TRACKING',
       entityType: 'TIME_ENTRY',
@@ -213,12 +259,21 @@ export class TimeTrackingService {
     return entry;
   }
 
-  async submit(orgId: string, entryId: string, userId: string) {
+  async submit(orgId: string, entryId: string, userId: string, userRole?: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.timeEntry.findFirst({
-      where: { id: entryId, organizationId: orgId, isDeleted: false },
+      where: { id: entryId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Time entry not found');
-    if (existing.status !== 'DRAFT') throw new BadRequestException('Only draft entries can be submitted');
+
+    const isManagerOrAdmin = userRole === Role.SUPER_ADMIN || userRole === Role.ADMIN || userRole === Role.MANAGER;
+    if (!isManagerOrAdmin && existing.userId !== userId) {
+      throw new ForbiddenException('You can only submit your own time entries');
+    }
+
+    if (existing.status !== 'DRAFT' && existing.status !== 'REJECTED') {
+      throw new BadRequestException('Only draft or rejected entries can be submitted');
+    }
 
     return this.prisma.timeEntry.update({
       where: { id: entryId },
@@ -231,11 +286,11 @@ export class TimeTrackingService {
   }
 
   async approve(orgId: string, entryId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.timeEntry.findFirst({
-      where: { id: entryId, organizationId: orgId, isDeleted: false },
+      where: { id: entryId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Time entry not found');
-    if (existing.status !== 'SUBMITTED') throw new BadRequestException('Only submitted entries can be approved');
 
     const entry = await this.prisma.timeEntry.update({
       where: { id: entryId },
@@ -249,7 +304,7 @@ export class TimeTrackingService {
     try {
       await this.notificationsService.createNotification({
         userId: existing.userId,
-        organizationId: orgId,
+        organizationId: realOrgId,
         title: 'Time Entry Approved',
         message: `Your time entry for ${existing.duration || 0}h has been approved`,
         category: 'TIME_TRACKING',
@@ -261,11 +316,22 @@ export class TimeTrackingService {
     return entry;
   }
 
-  async remove(orgId: string, entryId: string, userId: string) {
+  async remove(orgId: string, entryId: string, userId: string, userRole?: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.timeEntry.findFirst({
-      where: { id: entryId, organizationId: orgId, isDeleted: false },
+      where: { id: entryId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Time entry not found');
+
+    const isManagerOrAdmin = userRole === Role.SUPER_ADMIN || userRole === Role.ADMIN || userRole === Role.MANAGER;
+    if (!isManagerOrAdmin) {
+      if (existing.userId !== userId) {
+        throw new ForbiddenException('You can only delete your own time entries');
+      }
+      if (existing.status !== 'DRAFT' && existing.status !== 'REJECTED') {
+        throw new BadRequestException('Only draft entries can be deleted');
+      }
+    }
 
     await this.prisma.timeEntry.update({
       where: { id: entryId },
@@ -274,7 +340,7 @@ export class TimeTrackingService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TIME_ENTRY_DELETED',
       module: 'TIME_TRACKING',
       entityType: 'TIME_ENTRY',
@@ -287,27 +353,30 @@ export class TimeTrackingService {
 
   // --- Timer ---
   async startTimer(orgId: string, userId: string, data: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const running = await this.prisma.timeEntry.findFirst({
-      where: { userId, organizationId: orgId, status: 'RUNNING', isDeleted: false },
+      where: { userId, organizationId: realOrgId, status: 'RUNNING', isDeleted: false },
     });
-    if (running) throw new BadRequestException('You already have a running timer');
+    if (running) {
+      return running;
+    }
 
     const entry = await this.prisma.timeEntry.create({
       data: {
-        description: data.description || null,
+        description: data?.description || null,
         date: new Date(),
         startTime: new Date(),
         status: 'RUNNING',
-        billable: data.billable ?? false,
-        projectId: data.projectId || null,
-        taskId: data.taskId || null,
-        organizationId: orgId,
+        billable: data?.billable ?? false,
+        projectId: data?.projectId || null,
+        taskId: data?.taskId || null,
+        organizationId: realOrgId,
         userId,
         createdById: userId,
         updatedBy: userId,
       },
       include: {
-        project: { select: { id: true, projectName: true } },
+        project: { select: { id: true, projectName: true, projectCode: true } },
         task: { select: { id: true, title: true } },
       },
     });
@@ -316,31 +385,33 @@ export class TimeTrackingService {
   }
 
   async stopTimer(orgId: string, userId: string, entryId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const entry = await this.prisma.timeEntry.findFirst({
-      where: { id: entryId, userId, organizationId: orgId, status: 'RUNNING', isDeleted: false },
+      where: { id: entryId, userId, organizationId: realOrgId, status: 'RUNNING', isDeleted: false },
     });
     if (!entry) throw new NotFoundException('Running timer not found');
 
     const now = new Date();
-    const duration = entry.startTime
-      ? Math.round((now.getTime() - entry.startTime.getTime()) / (1000 * 60 * 60) * 100) / 100
-      : 0;
+    const startTime = entry.startTime || entry.createdAt;
+    const diffHours = (now.getTime() - new Date(startTime).getTime()) / (1000 * 60 * 60);
+    const duration = Math.max(0.01, Math.round(diffHours * 100) / 100);
 
     return this.prisma.timeEntry.update({
       where: { id: entryId },
       data: { endTime: now, duration, status: 'DRAFT', updatedBy: userId },
       include: {
-        project: { select: { id: true, projectName: true } },
+        project: { select: { id: true, projectName: true, projectCode: true } },
         task: { select: { id: true, title: true } },
       },
     });
   }
 
   async getRunningTimer(orgId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     return this.prisma.timeEntry.findFirst({
-      where: { userId, organizationId: orgId, status: 'RUNNING', isDeleted: false },
+      where: { userId, organizationId: realOrgId, status: 'RUNNING', isDeleted: false },
       include: {
-        project: { select: { id: true, projectName: true } },
+        project: { select: { id: true, projectName: true, projectCode: true } },
         task: { select: { id: true, title: true } },
       },
     });
@@ -348,7 +419,8 @@ export class TimeTrackingService {
 
   // --- Dashboard Stats ---
   async getStats(orgId: string, userId?: string) {
-    const where: any = { organizationId: orgId, isDeleted: false };
+    const realOrgId = await this.resolveOrgId(orgId);
+    const where: any = { organizationId: realOrgId, isDeleted: false };
     if (userId) where.userId = userId;
 
     const now = new Date();
@@ -382,21 +454,21 @@ export class TimeTrackingService {
       _sum: { duration: true },
     });
 
-    const totalDuration = totalDurationResult._sum.duration || 0;
-    const billableDuration = billableDurationResult._sum.duration || 0;
+    const totalDuration = Math.round((totalDurationResult._sum.duration || 0) * 100) / 100;
+    const billableDuration = Math.round((billableDurationResult._sum.duration || 0) * 100) / 100;
 
     return {
       totalEntries,
       totalDuration,
       billableDuration,
-      nonBillableDuration: totalDuration - billableDuration,
+      nonBillableDuration: Math.round((totalDuration - billableDuration) * 100) / 100,
       thisWeekEntries: thisWeek,
       thisMonthEntries: thisMonth,
       billableEntries: billableCount,
       activeTimers: runningCount,
       byProject: byProject.map(p => ({
         projectId: p.projectId,
-        totalDuration: p._sum.duration || 0,
+        totalDuration: Math.round((p._sum.duration || 0) * 100) / 100,
         entryCount: p._count,
       })),
     };
@@ -404,6 +476,7 @@ export class TimeTrackingService {
 
   // --- Weekly Timesheet ---
   async getWeeklyTimesheet(orgId: string, userId: string, query: { weekStart?: string }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     let weekStartDate: Date;
     if (query.weekStart) {
       weekStartDate = new Date(query.weekStart);
@@ -419,7 +492,7 @@ export class TimeTrackingService {
     const entries = await this.prisma.timeEntry.findMany({
       where: {
         userId,
-        organizationId: orgId,
+        organizationId: realOrgId,
         isDeleted: false,
         date: { gte: weekStartDate, lt: weekEndDate },
       },
@@ -439,13 +512,19 @@ export class TimeTrackingService {
     }
 
     for (const entry of entries) {
-      const key = entry.date.toISOString().split('T')[0];
+      const key = entry.date ? new Date(entry.date).toISOString().split('T')[0] : '';
       if (days[key]) days[key].push(entry);
     }
 
     const totalDuration = entries.reduce((sum, e) => sum + (e.duration || 0), 0);
     const billableDuration = entries.filter(e => e.billable).reduce((sum, e) => sum + (e.duration || 0), 0);
 
-    return { weekStart: weekStartDate.toISOString(), days, totalDuration, billableDuration, entries };
+    return {
+      weekStart: weekStartDate.toISOString().split('T')[0],
+      days,
+      totalDuration: Math.round(totalDuration * 100) / 100,
+      billableDuration: Math.round(billableDuration * 100) / 100,
+      entries,
+    };
   }
 }

@@ -34,6 +34,8 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [totalTokens, setTotalTokens] = useState(0);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [providerUnconfigured, setProviderUnconfigured] = useState(false);
 
   // Modals & UI Controls
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -49,23 +51,32 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
 
   const fetchConversationsAndFolders = async () => {
     setLoading(true);
+    setApiError(null);
+    setProviderUnconfigured(false);
     try {
       const [convsRes, foldersRes, promptsRes] = await Promise.all([
         apiFetch(`/organizations/${orgSlug}/ai/chat/conversations`),
         apiFetch(`/organizations/${orgSlug}/ai/chat/folders`),
-        apiFetch(`/organizations/${orgSlug}/prompts`),
+        apiFetch(`/organizations/${orgSlug}/prompts`).catch(() => []),
       ]);
       setConversations(convsRes || []);
       setFolders(foldersRes || []);
       setPrompts(promptsRes || []);
 
+      // Check if any AI providers are configured
+      try {
+        const providersRes = await apiFetch(`/organizations/${orgSlug}/ai/providers`);
+        if (!providersRes || providersRes.length === 0) {
+          setProviderUnconfigured(true);
+        }
+      } catch { /* provider check failure is non-blocking */ }
+
       if (convsRes && convsRes.length > 0 && !activeConversation) {
         selectConversation(convsRes[0]);
-      } else if (!convsRes || convsRes.length === 0) {
-        createNewChat();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load chat data:', err);
+      setApiError(err?.message || 'Failed to connect to AI Chat service');
     } finally {
       setLoading(false);
     }
@@ -98,7 +109,7 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
     setTotalTokens(sum);
   };
 
-  const createNewChat = async () => {
+  const createNewChat = async (): Promise<any> => {
     try {
       const newConv = await apiFetch(`/organizations/${orgSlug}/ai/chat/conversations`, {
         method: 'POST',
@@ -109,12 +120,14 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
         }),
       });
 
-      setConversations([newConv, ...conversations]);
+      setConversations((prev) => [newConv, ...prev]);
       setActiveConversation(newConv);
       setMessages([]);
       setTotalTokens(0);
+      return newConv;
     } catch (err) {
       console.error('Failed to create new chat:', err);
+      return null;
     }
   };
 
@@ -122,8 +135,10 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
     if (e) e.preventDefault();
     if (!inputContent.trim() || sending) return;
 
-    if (!activeConversation) {
-      await createNewChat();
+    let targetConv = activeConversation;
+    if (!targetConv) {
+      targetConv = await createNewChat();
+      if (!targetConv) return;
     }
 
     const currentText = inputContent;
@@ -144,7 +159,7 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
       const res = await apiFetch(`/organizations/${orgSlug}/ai/chat/messages`, {
         method: 'POST',
         body: JSON.stringify({
-          conversationId: activeConversation.id,
+          conversationId: targetConv.id,
           content: currentText,
           provider: selectedModelObj.provider,
           model: selectedModelObj.model,
@@ -160,7 +175,7 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
       setTotalTokens((prev) => prev + (res.userMessage.tokens || 0) + (res.assistantMessage.tokens || 0));
 
       const updatedConvs = conversations.map((c) =>
-        c.id === activeConversation.id
+        c.id === targetConv.id
           ? { ...c, title: c.title === 'New AI Chat Thread' ? currentText.substring(0, 30) : c.title, updatedAt: new Date().toISOString() }
           : c
       );
@@ -231,7 +246,33 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
   const unpinnedConvs = filteredConversations.filter((c) => !c.isPinned);
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+    <div className="space-y-4">
+      {/* API Error Banner */}
+      {apiError && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm">
+          <Shield size={18} className="shrink-0" />
+          <span><strong>Connection Error:</strong> {apiError}</span>
+          <button onClick={fetchConversationsAndFolders} className="ml-auto p-1.5 rounded hover:bg-red-500/10">
+            <RefreshCw size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Provider Unconfigured Banner */}
+      {providerUnconfigured && !apiError && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-sm">
+          <Cpu size={18} className="shrink-0 text-amber-500" />
+          <span>
+            <strong>No AI Providers Configured.</strong>{' '}
+            To use AI Chat, configure at least one provider in{' '}
+            <a href={`/${orgSlug}/settings/ai`} className="underline font-semibold hover:text-amber-600">
+              AI Settings → Providers
+            </a>.
+          </span>
+        </div>
+      )}
+
+      <div className="flex h-[calc(100vh-8rem)] bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
       {/* Sidebar Navigation */}
       <div className="w-72 bg-gray-50/70 dark:bg-zinc-900/60 border-r border-gray-200 dark:border-zinc-800 flex flex-col shrink-0">
         {/* Sidebar Header */}
@@ -569,6 +610,7 @@ export default function AIChatPage({ params }: { params: { orgSlug: string } }) 
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

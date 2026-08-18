@@ -11,6 +11,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../../common/roles';
 import { AIAssistantService } from './ai-assistant.service';
 import { AIAssistantCapabilityService } from './ai-assistant-capability.service';
 import { AIAssistantPermissionService } from './ai-assistant-permission.service';
@@ -39,6 +42,8 @@ export class AIAssistantController {
   }
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   createAssistant(
     @Req() req: any,
     @Param('orgId') orgId: string,
@@ -48,6 +53,8 @@ export class AIAssistantController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   updateAssistant(
     @Req() req: any,
     @Param('orgId') orgId: string,
@@ -58,6 +65,8 @@ export class AIAssistantController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   removeAssistant(
     @Req() req: any,
     @Param('orgId') orgId: string,
@@ -86,6 +95,8 @@ export class AIAssistantController {
   }
 
   @Patch(':id/capabilities')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   updateCapabilities(
     @Param('id') id: string,
     @Body() dto: UpdateCapabilitiesDto,
@@ -94,6 +105,8 @@ export class AIAssistantController {
   }
 
   @Patch(':id/permissions')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   updatePermissions(
     @Param('id') id: string,
     @Body() dto: UpdatePermissionsDto,
@@ -101,3 +114,4 @@ export class AIAssistantController {
     return this.permissionService.updatePermissions(id, dto.permissions);
   }
 }
+

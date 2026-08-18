@@ -88,22 +88,25 @@ export default function BusinessProcessesPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProcess, setNewProcess] = useState({ name: '', description: '', category: '' });
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const [statsData, processesData, executionsData, approvalsData] = await Promise.all([
         apiFetch(`/organizations/${orgSlug}/business-processes/stats`),
         apiFetch(`/organizations/${orgSlug}/business-processes?limit=100`),
-        apiFetch(`/organizations/${orgSlug}/business-processes/executions/all?limit=50`),
-        apiFetch(`/organizations/${orgSlug}/business-processes/approvals/pending`),
+        apiFetch(`/organizations/${orgSlug}/business-processes/executions/all?limit=50`).catch(() => []),
+        apiFetch(`/organizations/${orgSlug}/business-processes/approvals/pending`).catch(() => []),
       ]);
       setStats(statsData);
-      setProcesses(processesData.items || []);
+      setProcesses(processesData?.items || processesData || []);
       setExecutions(executionsData || []);
       setApprovals(approvalsData || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load business process data:', err);
+      setApiError(err?.message || 'Failed to load Business Processes data');
     } finally {
       setLoading(false);
     }

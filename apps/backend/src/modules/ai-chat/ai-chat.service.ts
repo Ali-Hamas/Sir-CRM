@@ -47,7 +47,20 @@ export class AIChatService {
     private readonly providerFactory: AIProviderFactoryService,
   ) {}
 
-  async createConversation(userId: string, orgId: string, dto: CreateConversationDto) {
+  private async resolveOrgId(orgIdOrSlug: string): Promise<string> {
+    if (!orgIdOrSlug) return orgIdOrSlug;
+    const org = await this.prisma.organization.findFirst({
+      where: {
+        OR: [{ id: orgIdOrSlug }, { slug: orgIdOrSlug }],
+        isDeleted: false,
+      },
+      select: { id: true },
+    });
+    return org ? org.id : orgIdOrSlug;
+  }
+
+  async createConversation(userId: string, orgIdOrSlug: string, dto: CreateConversationDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const title = dto.title?.trim() || 'New AI Chat Thread';
 
     const conversation = await (this.prisma as any).aIConversation.create({
@@ -79,7 +92,8 @@ export class AIChatService {
     return conversation;
   }
 
-  async findAllConversations(userId: string, orgId: string, folderId?: string) {
+  async findAllConversations(userId: string, orgIdOrSlug: string, folderId?: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const where: any = {
       organizationId: orgId,
       userId,
@@ -98,7 +112,8 @@ export class AIChatService {
     });
   }
 
-  async findOneConversation(id: string, userId: string, orgId: string) {
+  async findOneConversation(id: string, userId: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const conversation = await (this.prisma as any).aIConversation.findFirst({
       where: { id, organizationId: orgId, userId, isDeleted: false },
       include: {
@@ -110,7 +125,8 @@ export class AIChatService {
     return conversation;
   }
 
-  async updateConversation(id: string, userId: string, orgId: string, dto: UpdateConversationDto) {
+  async updateConversation(id: string, userId: string, orgIdOrSlug: string, dto: UpdateConversationDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     await this.findOneConversation(id, userId, orgId);
 
     return (this.prisma as any).aIConversation.update({
@@ -127,7 +143,8 @@ export class AIChatService {
     });
   }
 
-  async removeConversation(id: string, userId: string, orgId: string) {
+  async removeConversation(id: string, userId: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     await this.findOneConversation(id, userId, orgId);
 
     await (this.prisma as any).aIConversation.update({
@@ -140,7 +157,8 @@ export class AIChatService {
     return { success: true, message: 'Conversation deleted' };
   }
 
-  async createMessage(userId: string, orgId: string, dto: CreateMessageDto) {
+  async createMessage(userId: string, orgIdOrSlug: string, dto: CreateMessageDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const conversation = await this.findOneConversation(dto.conversationId, userId, orgId);
 
     const userTokenEstimate = Math.ceil(dto.content.length / 4);
@@ -199,7 +217,8 @@ export class AIChatService {
     };
   }
 
-  async getMessages(conversationId: string, userId: string, orgId: string) {
+  async getMessages(conversationId: string, userId: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     await this.findOneConversation(conversationId, userId, orgId);
     return (this.prisma as any).aIMessage.findMany({
       where: { conversationId },
@@ -207,7 +226,8 @@ export class AIChatService {
     });
   }
 
-  async createFolder(userId: string, orgId: string, dto: CreateFolderDto) {
+  async createFolder(userId: string, orgIdOrSlug: string, dto: CreateFolderDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     return (this.prisma as any).aIConversationFolder.create({
       data: {
         organizationId: orgId,
@@ -218,7 +238,8 @@ export class AIChatService {
     });
   }
 
-  async getFolders(userId: string, orgId: string) {
+  async getFolders(userId: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     return (this.prisma as any).aIConversationFolder.findMany({
       where: { organizationId: orgId, userId },
       orderBy: { name: 'asc' },
@@ -228,7 +249,8 @@ export class AIChatService {
     });
   }
 
-  async togglePin(id: string, userId: string, orgId: string) {
+  async togglePin(id: string, userId: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const conv = await this.findOneConversation(id, userId, orgId);
     return (this.prisma as any).aIConversation.update({
       where: { id },
@@ -236,3 +258,4 @@ export class AIChatService {
     });
   }
 }
+

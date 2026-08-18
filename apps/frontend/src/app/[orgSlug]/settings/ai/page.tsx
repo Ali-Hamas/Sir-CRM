@@ -38,6 +38,7 @@ export default function AISettingsPage({ params }: { params: { orgSlug: string }
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Connection Test Modal State
   const [testResult, setTestResult] = useState<any>(null);
@@ -45,15 +46,17 @@ export default function AISettingsPage({ params }: { params: { orgSlug: string }
 
   const fetchAIData = async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const [providersRes, modelsRes] = await Promise.all([
         apiFetch(`/organizations/${orgSlug}/ai/providers`),
-        apiFetch(`/organizations/${orgSlug}/ai/models`),
+        apiFetch(`/organizations/${orgSlug}/ai/models`).catch(() => []),
       ]);
       setProviders(providersRes || []);
       setAllModels(modelsRes || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load AI provider data:', err);
+      setApiError(err?.message || 'Failed to connect to AI Provider service');
     } finally {
       setLoading(false);
     }

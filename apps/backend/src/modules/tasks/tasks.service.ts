@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WorkflowsExecutionService } from '../workflows/workflows-execution.service';
+import { Role } from '../../common/roles';
 
 @Injectable()
 export class TasksService {
@@ -13,11 +14,20 @@ export class TasksService {
     private workflowsExecutionService: WorkflowsExecutionService,
   ) {}
 
-  async create(orgId: string, userId: string, data: any) {
-    const project = await this.prisma.project.findFirst({
-      where: { id: data.projectId, organizationId: orgId, isDeleted: false },
+  private async resolveOrgId(orgIdOrSlug: string): Promise<string> {
+    const org = await this.prisma.organization.findFirst({
+      where: { OR: [{ id: orgIdOrSlug }, { slug: orgIdOrSlug }] },
+      select: { id: true },
     });
-    if (!project) throw new NotFoundException('Project not found');
+    return org ? org.id : orgIdOrSlug;
+  }
+
+  async create(orgId: string, userId: string, data: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
+    const project = await this.prisma.project.findFirst({
+      where: { id: data.projectId, organizationId: realOrgId, isDeleted: false },
+    });
+    if (!project) throw new NotFoundException('Project not found in this organization');
 
     const task = await this.prisma.task.create({
       data: {
@@ -32,12 +42,12 @@ export class TasksService {
         projectId: data.projectId,
         milestoneId: data.milestoneId || null,
         reporterId: data.reporterId || userId,
-        organizationId: orgId,
+        organizationId: realOrgId,
         createdById: userId,
         updatedBy: userId,
       },
       include: {
-        project: { select: { id: true, projectName: true } },
+        project: { select: { id: true, projectName: true, projectCode: true } },
         milestone: { select: { id: true, title: true } },
         reporter: { select: { id: true, firstName: true, lastName: true, email: true } },
         assignees: {
@@ -47,19 +57,19 @@ export class TasksService {
     });
 
     // Add assignees
-    if (data.assigneeIds && data.assigneeIds.length > 0) {
+    if (data.assigneeIds && Array.isArray(data.assigneeIds) && data.assigneeIds.length > 0) {
       await this.prisma.taskAssignee.createMany({
         data: data.assigneeIds.map((uid: string) => ({ taskId: task.id, userId: uid })),
       });
     }
 
     // Create checklists
-    if (data.checklists && data.checklists.length > 0) {
+    if (data.checklists && Array.isArray(data.checklists) && data.checklists.length > 0) {
       for (const cl of data.checklists) {
         const checklist = await this.prisma.taskChecklist.create({
           data: { taskId: task.id, title: cl.title },
         });
-        if (cl.items && cl.items.length > 0) {
+        if (cl.items && Array.isArray(cl.items) && cl.items.length > 0) {
           await this.prisma.taskChecklistItem.createMany({
             data: cl.items.map((item: string, idx: number) => ({
               checklistId: checklist.id,
@@ -73,7 +83,7 @@ export class TasksService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TASK_CREATED',
       module: 'TASKS',
       entityType: 'TASK',
@@ -83,7 +93,7 @@ export class TasksService {
 
     this.workflowsExecutionService.handleTrigger({
       type: 'TASK_CREATED',
-      organizationId: orgId,
+      organizationId: realOrgId,
       userId,
       entityType: 'TASK',
       entityId: task.id,
@@ -109,30 +119,47 @@ export class TasksService {
       page?: number;
       limit?: number;
     } = {},
+    user?: { id: string; role: string },
   ) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const page = query.page || 1;
     const limit = query.limit || 50;
     const skip = (page - 1) * limit;
 
-    const where: any = { organizationId: orgId, isDeleted: false };
+    const where: any = { organizationId: realOrgId, isDeleted: false };
 
     if (query.status) where.status = query.status;
     if (query.priority) where.priority = query.priority;
     if (query.projectId) where.projectId = query.projectId;
     if (query.milestoneId) where.milestoneId = query.milestoneId;
     if (query.reporterId) where.reporterId = query.reporterId;
-    if (query.label) where.labels = { contains: query.label };
+    if (query.label) where.labels = { contains: query.label, mode: 'insensitive' };
 
     if (query.assigneeId) {
       where.assignees = { some: { userId: query.assigneeId } };
     }
 
+    // RBAC client scoping
+    if (user?.role === Role.CLIENT) {
+      const clientRecord = await this.prisma.client.findFirst({
+        where: { organizationId: realOrgId, OR: [{ id: user.id }, { companyId: user.id }] },
+      });
+      if (clientRecord) {
+        where.project = { OR: [{ clientId: clientRecord.id }, { companyId: clientRecord.companyId }] };
+      } else {
+        where.createdById = user.id;
+      }
+    }
+
     if (query.search) {
-      where.OR = [
-        { title: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
-        { labels: { contains: query.search, mode: 'insensitive' } },
-      ];
+      where.AND = where.AND || [];
+      where.AND.push({
+        OR: [
+          { title: { contains: query.search, mode: 'insensitive' } },
+          { description: { contains: query.search, mode: 'insensitive' } },
+          { labels: { contains: query.search, mode: 'insensitive' } },
+        ],
+      });
     }
 
     const orderBy: any = {};
@@ -165,11 +192,12 @@ export class TasksService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async findOne(orgId: string, taskId: string) {
+  async findOne(orgId: string, taskId: string, user?: { id: string; role: string }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
       include: {
-        project: { select: { id: true, projectName: true, projectCode: true } },
+        project: { select: { id: true, projectName: true, projectCode: true, clientId: true, companyId: true } },
         milestone: { select: { id: true, title: true, status: true } },
         reporter: { select: { id: true, firstName: true, lastName: true, email: true, profilePictureUrl: true } },
         createdBy: { select: { id: true, firstName: true, lastName: true, email: true } },
@@ -197,14 +225,30 @@ export class TasksService {
     });
 
     if (!task) throw new NotFoundException('Task not found');
+
+    if (user?.role === Role.CLIENT) {
+      const clientRecord = await this.prisma.client.findFirst({
+        where: { organizationId: realOrgId, OR: [{ id: user.id }, { companyId: user.id }] },
+      });
+      if (clientRecord && task.project?.clientId !== clientRecord.id && task.project?.companyId !== clientRecord.companyId && task.createdById !== user.id) {
+        throw new ForbiddenException('You do not have permission to view this task');
+      }
+    }
+
     return task;
   }
 
-  async update(orgId: string, taskId: string, userId: string, data: any) {
+  async update(orgId: string, taskId: string, userId: string, data: any, userRole?: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
+      include: { assignees: true },
     });
     if (!existing) throw new NotFoundException('Task not found');
+
+    if (userRole === Role.CLIENT) {
+      throw new ForbiddenException('Clients cannot edit internal tasks');
+    }
 
     const updateData: any = {};
     if (data.title !== undefined) updateData.title = data.title;
@@ -221,13 +265,14 @@ export class TasksService {
     if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
     if (data.milestoneId !== undefined) updateData.milestoneId = data.milestoneId || null;
     if (data.reporterId !== undefined) updateData.reporterId = data.reporterId;
+    if (data.projectId !== undefined) updateData.projectId = data.projectId;
     updateData.updatedBy = userId;
 
     const task = await this.prisma.task.update({
       where: { id: taskId },
       data: updateData,
       include: {
-        project: { select: { id: true, projectName: true } },
+        project: { select: { id: true, projectName: true, projectCode: true } },
         milestone: { select: { id: true, title: true } },
         reporter: { select: { id: true, firstName: true, lastName: true } },
         assignees: {
@@ -236,8 +281,8 @@ export class TasksService {
       },
     });
 
-    // Update assignees
-    if (data.assigneeIds !== undefined) {
+    // Update assignees if provided
+    if (data.assigneeIds !== undefined && Array.isArray(data.assigneeIds)) {
       await this.prisma.taskAssignee.deleteMany({ where: { taskId } });
       if (data.assigneeIds.length > 0) {
         await this.prisma.taskAssignee.createMany({
@@ -248,7 +293,7 @@ export class TasksService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TASK_UPDATED',
       module: 'TASKS',
       entityType: 'TASK',
@@ -259,11 +304,16 @@ export class TasksService {
     return task;
   }
 
-  async updateStatus(orgId: string, taskId: string, userId: string, status: string) {
+  async updateStatus(orgId: string, taskId: string, userId: string, status: string, userRole?: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Task not found');
+
+    if (userRole === Role.CLIENT) {
+      throw new ForbiddenException('Clients cannot change task status');
+    }
 
     const updateData: any = { status, updatedBy: userId };
     if (status === 'DONE') updateData.completedAt = new Date();
@@ -273,7 +323,7 @@ export class TasksService {
       where: { id: taskId },
       data: updateData,
       include: {
-        project: { select: { id: true, projectName: true } },
+        project: { select: { id: true, projectName: true, projectCode: true } },
         assignees: {
           include: { user: { select: { id: true, firstName: true, lastName: true } } },
         },
@@ -282,7 +332,7 @@ export class TasksService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TASK_STATUS_CHANGED',
       module: 'TASKS',
       entityType: 'TASK',
@@ -293,7 +343,7 @@ export class TasksService {
     if (status === 'DONE') {
       this.workflowsExecutionService.handleTrigger({
         type: 'TASK_COMPLETED',
-        organizationId: orgId,
+        organizationId: realOrgId,
         userId,
         entityType: 'TASK',
         entityId: taskId,
@@ -307,7 +357,7 @@ export class TasksService {
         try {
           await this.notificationsService.createNotification({
             userId: assignee.userId,
-            organizationId: orgId,
+            organizationId: realOrgId,
             title: 'Task Status Updated',
             message: `Task "${task.title}" moved to ${status.replace(/_/g, ' ')}`,
             category: 'TASKS',
@@ -322,8 +372,9 @@ export class TasksService {
   }
 
   async remove(orgId: string, taskId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Task not found');
 
@@ -334,7 +385,7 @@ export class TasksService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TASK_DELETED',
       module: 'TASKS',
       entityType: 'TASK',
@@ -347,8 +398,9 @@ export class TasksService {
 
   // --- Comments ---
   async addComment(orgId: string, taskId: string, userId: string, data: { content: string }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -359,7 +411,7 @@ export class TasksService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'TASK_COMMENT_ADDED',
       module: 'TASKS',
       entityType: 'TASK',
@@ -371,8 +423,9 @@ export class TasksService {
   }
 
   async removeComment(orgId: string, taskId: string, commentId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -382,8 +435,9 @@ export class TasksService {
 
   // --- Checklists ---
   async addChecklist(orgId: string, taskId: string, userId: string, data: { title: string; items?: string[] }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -391,7 +445,7 @@ export class TasksService {
       data: { taskId, title: data.title },
     });
 
-    if (data.items && data.items.length > 0) {
+    if (data.items && Array.isArray(data.items) && data.items.length > 0) {
       await this.prisma.taskChecklistItem.createMany({
         data: data.items.map((item, idx) => ({ checklistId: checklist.id, title: item, sortOrder: idx })),
       });
@@ -404,8 +458,9 @@ export class TasksService {
   }
 
   async updateChecklistItem(orgId: string, taskId: string, itemId: string, userId: string, data: { isCompleted: boolean }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -416,8 +471,9 @@ export class TasksService {
   }
 
   async removeChecklist(orgId: string, taskId: string, checklistId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -427,13 +483,14 @@ export class TasksService {
 
   // --- Dependencies ---
   async addDependency(orgId: string, taskId: string, userId: string, data: { dependsOnId: string }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!task) throw new NotFoundException('Task not found');
 
     const dependsOn = await this.prisma.task.findFirst({
-      where: { id: data.dependsOnId, organizationId: orgId, isDeleted: false },
+      where: { id: data.dependsOnId, organizationId: realOrgId, isDeleted: false },
     });
     if (!dependsOn) throw new NotFoundException('Dependency task not found');
 
@@ -446,8 +503,9 @@ export class TasksService {
   }
 
   async removeDependency(orgId: string, taskId: string, dependencyId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const task = await this.prisma.task.findFirst({
-      where: { id: taskId, organizationId: orgId, isDeleted: false },
+      where: { id: taskId, organizationId: realOrgId, isDeleted: false },
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -457,8 +515,9 @@ export class TasksService {
 
   // --- Stats ---
   async getStats(orgId: string, projectId?: string) {
-    const baseWhere = { organizationId: orgId, isDeleted: false };
-    if (projectId) Object.assign(baseWhere, { projectId });
+    const realOrgId = await this.resolveOrgId(orgId);
+    const baseWhere: any = { organizationId: realOrgId, isDeleted: false };
+    if (projectId && projectId !== 'all') Object.assign(baseWhere, { projectId });
 
     const now = new Date();
 
@@ -492,10 +551,28 @@ export class TasksService {
   }
 
   // --- Kanban ---
-  async getKanbanBoard(orgId: string, projectId: string) {
+  async getKanbanBoard(orgId: string, projectId?: string, user?: { id: string; role: string }) {
+    const realOrgId = await this.resolveOrgId(orgId);
+    const where: any = { organizationId: realOrgId, isDeleted: false };
+    if (projectId && projectId !== 'all') {
+      where.projectId = projectId;
+    }
+
+    if (user?.role === Role.CLIENT) {
+      const clientRecord = await this.prisma.client.findFirst({
+        where: { organizationId: realOrgId, OR: [{ id: user.id }, { companyId: user.id }] },
+      });
+      if (clientRecord) {
+        where.project = { OR: [{ clientId: clientRecord.id }, { companyId: clientRecord.companyId }] };
+      } else {
+        where.createdById = user.id;
+      }
+    }
+
     const tasks = await this.prisma.task.findMany({
-      where: { organizationId: orgId, projectId, isDeleted: false },
+      where,
       include: {
+        project: { select: { id: true, projectName: true, projectCode: true } },
         milestone: { select: { id: true, title: true } },
         reporter: { select: { id: true, firstName: true, lastName: true } },
         assignees: {
@@ -515,6 +592,9 @@ export class TasksService {
     for (const task of tasks) {
       if (board[task.status]) {
         board[task.status].push(task);
+      } else {
+        // Handle unexpected status fallback into TODO
+        board['TODO'].push(task);
       }
     }
 

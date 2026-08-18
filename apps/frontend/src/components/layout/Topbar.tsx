@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { getUserDisplayName } from '@/lib/permissions';
+import { NotificationDropdown } from './NotificationDropdown';
 
 export function Topbar({ onOpenCommandPalette }: { onOpenCommandPalette: () => void }) {
   const { theme, setTheme } = useTheme();
@@ -100,17 +101,8 @@ export function Topbar({ onOpenCommandPalette }: { onOpenCommandPalette: () => v
           </button>
         )}
 
-        {/* Notifications Button */}
-        {orgSlug && (
-          <button
-            className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors relative"
-            onClick={() => router.push(`/${orgSlug}/notifications`)}
-            title="Notifications"
-          >
-            <Bell size={16} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-white dark:ring-zinc-950" />
-          </button>
-        )}
+        {/* Notifications Dropdown */}
+        {orgSlug && <NotificationDropdown orgSlug={orgSlug} />}
 
         {/* Theme Toggle */}
         {mounted && (

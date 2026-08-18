@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -17,6 +17,17 @@ export class NotificationsController {
     return this.notificationsService.getUnreadCount(req.user.id, orgId);
   }
 
+  // Preferences
+  @Get('preferences')
+  getPreferences(@Req() req: any): Promise<any> {
+    return this.notificationsService.getPreferences(req.user.id);
+  }
+
+  @Patch('preferences')
+  updatePreferences(@Req() req: any, @Body() data: any): Promise<any> {
+    return this.notificationsService.updatePreferences(req.user.id, data);
+  }
+
   @Patch('mark-all-read')
   markAllAsRead(@Req() req: any, @Param('orgId') orgId: string) {
     return this.notificationsService.markAllAsRead(req.user.id, orgId);
@@ -31,15 +42,5 @@ export class NotificationsController {
   remove(@Req() req: any, @Param('orgId') orgId: string, @Param('id') id: string) {
     return this.notificationsService.deleteNotification(req.user.id, orgId, id);
   }
-
-  // Preferences
-  @Get('preferences')
-  getPreferences(@Req() req: any): Promise<any> {
-    return this.notificationsService.getPreferences(req.user.id);
-  }
-
-  @Patch('preferences')
-  updatePreferences(@Req() req: any, @Body() data: any): Promise<any> {
-    return this.notificationsService.updatePreferences(req.user.id, data);
-  }
 }
+

@@ -10,6 +10,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../../common/roles';
 import { ToolRegistryService } from './tool-registry.service';
 import { ToolExecutorService } from './tool-executor.service';
 import { ToolPermissionService } from './tool-permission.service';
@@ -59,6 +62,8 @@ export class AIToolsController {
   }
 
   @Patch(':toolId/permissions')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   updatePermissions(
     @Param('toolId') toolId: string,
     @Body() dto: UpdateToolPermissionsDto,
@@ -66,3 +71,4 @@ export class AIToolsController {
     return this.permissionService.updateToolPermissions(toolId, dto.permissions);
   }
 }
+

@@ -98,6 +98,7 @@ export default function EnterpriseAIAgentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Settings form state for selected agent
   const [settingsForm, setSettingsForm] = useState({
@@ -121,6 +122,7 @@ export default function EnterpriseAIAgentsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const data = await apiFetch(`/organizations/${orgSlug}/ai/agents`);
       setAgents(data || []);
@@ -129,8 +131,9 @@ export default function EnterpriseAIAgentsPage() {
         setSelectedAgent(first);
         populateSettingsForm(first);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load AI agents:', err);
+      setApiError(err?.message || 'Failed to load AI Agents');
     } finally {
       setLoading(false);
     }

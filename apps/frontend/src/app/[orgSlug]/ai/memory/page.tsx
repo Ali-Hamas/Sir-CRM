@@ -27,6 +27,7 @@ export default function AIMemoryPage({ params }: { params: { orgSlug: string } }
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,6 +52,7 @@ export default function AIMemoryPage({ params }: { params: { orgSlug: string } }
 
   const fetchMemoryData = async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const [memoriesRes, prefsRes] = await Promise.all([
         apiFetch(`/organizations/${orgSlug}/ai/memory?search=${search}&memoryType=${typeFilter}&source=${sourceFilter}`),
@@ -65,8 +67,9 @@ export default function AIMemoryPage({ params }: { params: { orgSlug: string } }
         const depthObj = prefsRes.find((p: any) => p.preferenceKey === 'CONTEXT_DEPTH');
         if (depthObj) setContextDepth(depthObj.preferenceValue);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load AI memory data:', err);
+      setApiError(err?.message || 'Failed to load AI Memory data');
     } finally {
       setLoading(false);
     }

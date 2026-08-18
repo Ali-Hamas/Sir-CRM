@@ -9,6 +9,9 @@ import {
   Req,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../../common/roles';
 import { IndexerService } from './indexer.service';
 import { RetrieverService } from './retriever.service';
 import { ContextBuilderService } from './context-builder.service';
@@ -32,6 +35,8 @@ export class RAGController {
   }
 
   @Post('index')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   triggerIndexing(
     @Param('orgId') orgId: string,
     @Body() dto: IndexRAGDto,
@@ -71,6 +76,8 @@ export class RAGController {
   }
 
   @Patch('settings')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   updateSettings(
     @Param('orgId') orgId: string,
     @Body() dto: UpdateRAGSettingsDto,
@@ -78,3 +85,4 @@ export class RAGController {
     return this.indexerService.updateSettings(orgId, dto);
   }
 }
+

@@ -4,6 +4,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../../common/roles';
 import { BusinessProcessService } from './business-process.service';
 import { BusinessProcessExecutorService } from './business-process-executor.service';
 import { BusinessProcessApprovalService } from './business-process-approval.service';
@@ -32,6 +33,8 @@ export class BusinessProcessController {
   }
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   create(@Param('orgId') orgId: string, @Body() dto: CreateBusinessProcessDto) {
     return this.processService.create(orgId, dto);
   }
@@ -53,11 +56,15 @@ export class BusinessProcessController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   update(@Param('orgId') orgId: string, @Param('id') id: string, @Body() dto: UpdateBusinessProcessDto) {
     return this.processService.update(orgId, id, dto);
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   remove(@Param('orgId') orgId: string, @Param('id') id: string) {
     return this.processService.remove(orgId, id);
   }
@@ -73,6 +80,8 @@ export class BusinessProcessController {
   }
 
   @Post(':id/pause')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   pauseExecution(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
@@ -81,6 +90,8 @@ export class BusinessProcessController {
   }
 
   @Post(':id/resume')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   resumeExecution(
     @Param('orgId') orgId: string,
     @Param('id') id: string,
@@ -89,6 +100,8 @@ export class BusinessProcessController {
   }
 
   @Post(':id/cancel')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   cancelExecution(
     @Param('orgId') orgId: string,
     @Param('id') id: string,

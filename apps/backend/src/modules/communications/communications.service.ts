@@ -254,4 +254,31 @@ export class CommunicationsService {
     ]);
     return { total, byChannel, byStatus, deliveryStats };
   }
+
+  async testProvider(orgIdOrSlug: string, providerId: string, userId: string, targetRecipient?: string) {
+    const org = await this.resolveOrg(orgIdOrSlug);
+    const provider = await this.prisma.communicationProvider.findFirst({
+      where: { id: providerId, organizationId: org.id, isDeleted: false },
+    });
+    if (!provider) throw new NotFoundException('Provider not found');
+
+    const recipient = targetRecipient || 'test@blackdesk.io';
+    const dto = new SendMessageDto();
+    dto.channel = provider.channel;
+    dto.subject = `[Test] Communication from ${provider.name}`;
+    dto.body = `This is a test communication sent via Blackdesk OS using provider ${provider.name} (${provider.providerType}).`;
+    dto.bodyFormat = 'PLAIN_TEXT';
+    dto.recipients = [{ address: recipient, name: 'Tester' }];
+    dto.providerId = provider.id;
+
+    const message = await this.send(org.id, userId, dto);
+    return {
+      success: true,
+      message: `Test message dispatched to ${recipient} via ${provider.name}`,
+      messageId: message.id,
+      channel: provider.channel,
+      status: message.status,
+    };
+  }
 }
+

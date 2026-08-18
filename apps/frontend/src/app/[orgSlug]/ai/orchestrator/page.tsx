@@ -145,6 +145,7 @@ export default function AIOrchestratorPage() {
   const [workflowLogs, setWorkflowLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Execute form
   const [prompt, setPrompt] = useState('');
@@ -152,11 +153,13 @@ export default function AIOrchestratorPage() {
 
   const fetchWorkflows = useCallback(async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const data = await apiFetch(`/organizations/${orgSlug}/ai/orchestrator/workflows?limit=50`);
       setWorkflows(data.items || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load workflows:', err);
+      setApiError(err?.message || 'Failed to load AI Orchestrator workflows');
     } finally {
       setLoading(false);
     }

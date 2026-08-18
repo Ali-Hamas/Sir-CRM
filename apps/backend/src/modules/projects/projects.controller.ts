@@ -19,22 +19,35 @@ export class ProjectsController {
 
   @Get()
   findAll(
+    @Req() req: any,
     @Param('orgId') orgId: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('priority') priority?: string,
     @Query('companyId') companyId?: string,
     @Query('projectManagerId') projectManagerId?: string,
+    @Query('workspaceId') workspaceId?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.projectsService.findAll(orgId, {
-      search, status, priority, companyId, projectManagerId, sortBy, sortOrder,
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
-    });
+    return this.projectsService.findAll(
+      orgId,
+      {
+        search,
+        status,
+        priority,
+        companyId,
+        projectManagerId,
+        workspaceId,
+        sortBy,
+        sortOrder,
+        page: page ? parseInt(page, 10) : undefined,
+        limit: limit ? parseInt(limit, 10) : undefined,
+      },
+      req.user,
+    );
   }
 
   @Get('stats')
@@ -56,8 +69,8 @@ export class ProjectsController {
   }
 
   @Get(':projectId')
-  findOne(@Param('orgId') orgId: string, @Param('projectId') projectId: string) {
-    return this.projectsService.findOne(orgId, projectId);
+  findOne(@Req() req: any, @Param('orgId') orgId: string, @Param('projectId') projectId: string) {
+    return this.projectsService.findOne(orgId, projectId, req.user);
   }
 
   @UseGuards(RolesGuard)
@@ -179,5 +192,4 @@ export class ProjectsController {
   ) {
     return this.projectsService.removeMilestone(orgId, projectId, milestoneId, req.user.id);
   }
-
 }

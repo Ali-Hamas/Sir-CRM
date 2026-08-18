@@ -42,7 +42,20 @@ export class AIProvidersService {
     private readonly encryptionService: AIEncryptionService,
   ) {}
 
-  async create(userId: string, orgId: string, dto: CreateAIProviderDto) {
+  private async resolveOrgId(orgIdOrSlug: string): Promise<string> {
+    if (!orgIdOrSlug) return orgIdOrSlug;
+    const org = await this.prisma.organization.findFirst({
+      where: {
+        OR: [{ id: orgIdOrSlug }, { slug: orgIdOrSlug }],
+        isDeleted: false,
+      },
+      select: { id: true },
+    });
+    return org ? org.id : orgIdOrSlug;
+  }
+
+  async create(userId: string, orgIdOrSlug: string, dto: CreateAIProviderDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const encryptedKey = dto.apiKey ? this.encryptionService.encrypt(dto.apiKey) : null;
 
     if (dto.isDefault) {
@@ -95,7 +108,8 @@ export class AIProvidersService {
     return this.sanitizeProvider(provider);
   }
 
-  async findAll(orgId: string) {
+  async findAll(orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const providers = await (this.prisma as any).aIProvider.findMany({
       where: { organizationId: orgId, isDeleted: false },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
@@ -108,7 +122,8 @@ export class AIProvidersService {
     return providers.map((p: any) => this.sanitizeProvider(p));
   }
 
-  async findOne(id: string, orgId: string) {
+  async findOne(id: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const provider = await (this.prisma as any).aIProvider.findFirst({
       where: { id, organizationId: orgId, isDeleted: false },
       include: {
@@ -122,7 +137,8 @@ export class AIProvidersService {
     return this.sanitizeProvider(provider);
   }
 
-  async update(id: string, userId: string, orgId: string, dto: UpdateAIProviderDto) {
+  async update(id: string, userId: string, orgIdOrSlug: string, dto: UpdateAIProviderDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const existing = await this.findOne(id, orgId);
 
     if (dto.isDefault) {
@@ -140,7 +156,7 @@ export class AIProvidersService {
     if (dto.baseUrl !== undefined) updateData.baseUrl = dto.baseUrl;
     if (dto.enabled !== undefined) updateData.enabled = dto.enabled;
     if (dto.isDefault !== undefined) updateData.isDefault = dto.isDefault;
-    if (dto.apiKey) {
+    if (dto.apiKey && !dto.apiKey.includes('••••')) {
       updateData.apiKey = this.encryptionService.encrypt(dto.apiKey);
     }
 
@@ -165,7 +181,8 @@ export class AIProvidersService {
     return this.sanitizeProvider(updated);
   }
 
-  async remove(id: string, userId: string, orgId: string) {
+  async remove(id: string, userId: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const provider = await this.findOne(id, orgId);
 
     const deleted = await (this.prisma as any).aIProvider.update({
@@ -192,7 +209,8 @@ export class AIProvidersService {
     return { success: true, message: 'AI Provider deleted' };
   }
 
-  async testConnection(id: string, orgId: string) {
+  async testConnection(id: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const providerRaw = await (this.prisma as any).aIProvider.findFirst({
       where: { id, organizationId: orgId, isDeleted: false },
       include: { models: true },
@@ -236,7 +254,8 @@ export class AIProvidersService {
     };
   }
 
-  async getAllModels(orgId: string) {
+  async getAllModels(orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const providers = await (this.prisma as any).aIProvider.findMany({
       where: { organizationId: orgId, enabled: true, isDeleted: false },
       include: {
@@ -275,3 +294,4 @@ export class AIProvidersService {
     };
   }
 }
+

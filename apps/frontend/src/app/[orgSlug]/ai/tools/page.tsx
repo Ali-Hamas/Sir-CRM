@@ -78,6 +78,7 @@ export default function AIToolsFrameworkPage() {
   const [categories, setCategories] = useState<ToolCategory[]>([]);
   const [executions, setExecutions] = useState<ExecutionLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,6 +92,7 @@ export default function AIToolsFrameworkPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const [toolsData, catData, execData] = await Promise.all([
         apiFetch(`/organizations/${orgSlug}/ai/tools`),
@@ -105,8 +107,9 @@ export default function AIToolsFrameworkPage() {
       if (toolsData && toolsData.length > 0 && !selectedTool) {
         setSelectedTool(toolsData[0]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load AI tools framework data:', err);
+      setApiError(err?.message || 'Failed to load AI Tools data');
     } finally {
       setLoading(false);
     }

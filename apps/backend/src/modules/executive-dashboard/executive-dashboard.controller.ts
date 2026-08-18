@@ -1,8 +1,12 @@
 import { Controller, Get, Param, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../../common/roles';
 import { ExecutiveDashboardService } from './executive-dashboard.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
 @Controller('organizations/:orgId/executive')
 export class ExecutiveDashboardController {
   constructor(private readonly dashboardService: ExecutiveDashboardService) {}
@@ -27,3 +31,4 @@ export class ExecutiveDashboardController {
     return this.dashboardService.getPredictions(orgId);
   }
 }
+

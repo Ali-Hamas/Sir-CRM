@@ -39,13 +39,14 @@ export class AIMemoryController {
 
   @Get('memory')
   findAllMemories(
+    @Req() req: any,
     @Param('orgId') orgId: string,
     @Query('search') search?: string,
     @Query('memoryType') memoryType?: string,
     @Query('source') source?: string,
     @Query('minImportance') minImportance?: number,
   ) {
-    return this.memoryService.findAllMemories(orgId, { search, memoryType, source, minImportance });
+    return this.memoryService.findAllMemories(req.user.id, orgId, req.user.role, { search, memoryType, source, minImportance });
   }
 
   @Get('memory/preferences')
@@ -63,8 +64,8 @@ export class AIMemoryController {
   }
 
   @Get('memory/:id')
-  findOneMemory(@Param('id') id: string, @Param('orgId') orgId: string) {
-    return this.memoryService.findOneMemory(id, orgId);
+  findOneMemory(@Req() req: any, @Param('id') id: string, @Param('orgId') orgId: string) {
+    return this.memoryService.findOneMemory(id, req.user.id, orgId, req.user.role);
   }
 
   @Patch('memory/:id')
@@ -76,7 +77,7 @@ export class AIMemoryController {
     @Param('orgId') orgId: string,
     @Body() dto: UpdateMemoryDto,
   ) {
-    return this.memoryService.updateMemory(id, req.user.id, orgId, dto);
+    return this.memoryService.updateMemory(id, req.user.id, orgId, dto, req.user.role);
   }
 
   @Delete('memory/:id')
@@ -87,7 +88,7 @@ export class AIMemoryController {
     @Param('id') id: string,
     @Param('orgId') orgId: string,
   ) {
-    return this.memoryService.removeMemory(id, req.user.id, orgId);
+    return this.memoryService.removeMemory(id, req.user.id, orgId, req.user.role);
   }
 
   @Post('context/build')

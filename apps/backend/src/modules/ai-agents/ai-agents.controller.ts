@@ -11,6 +11,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../../common/roles';
 import { AIAgentsService } from './ai-agents.service';
 import { CreateAIAgentDto } from './dto/create-agent.dto';
 import { UpdateAIAgentDto } from './dto/update-agent.dto';
@@ -27,6 +30,8 @@ export class AIAgentsController {
   }
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   createAgent(
     @Req() req: any,
     @Param('orgId') orgId: string,
@@ -41,6 +46,8 @@ export class AIAgentsController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   updateAgent(
     @Req() req: any,
     @Param('orgId') orgId: string,
@@ -51,6 +58,8 @@ export class AIAgentsController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
   removeAgent(
     @Req() req: any,
     @Param('orgId') orgId: string,
@@ -78,3 +87,4 @@ export class AIAgentsController {
     return this.agentsService.listExecutions(orgId, id, limit ? Number(limit) : 30);
   }
 }
+

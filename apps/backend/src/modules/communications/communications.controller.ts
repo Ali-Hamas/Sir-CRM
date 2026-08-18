@@ -69,33 +69,113 @@ export class CommunicationsController {
     return this.auditService.findByMessage(messageId);
   }
 
+  private maskProviderSecrets(provider: any): any {
+    if (!provider) return provider;
+    let configObj: any = {};
+    if (provider.config) {
+      try {
+        configObj = typeof provider.config === 'string' ? JSON.parse(provider.config) : provider.config;
+      } catch {
+        configObj = {};
+      }
+    }
+
+    const maskedConfig: Record<string, any> = {};
+    for (const [k, v] of Object.entries(configObj)) {
+      const lower = k.toLowerCase();
+      if (
+        (lower.includes('key') ||
+          lower.includes('pass') ||
+          lower.includes('secret') ||
+          lower.includes('token') ||
+          lower.includes('auth')) &&
+        typeof v === 'string' &&
+        v.length > 0
+      ) {
+        maskedConfig[k] = v.length > 8 ? `${v.substring(0, 4)}••••••••${v.substring(v.length - 2)}` : '••••••••';
+      } else {
+        maskedConfig[k] = v;
+      }
+    }
+
+    return {
+      ...provider,
+      config: JSON.stringify(maskedConfig),
+      configParsed: maskedConfig,
+    };
+  }
+
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Post('providers')
-  createProvider(@Param('orgId') orgId: string, @Body() dto: CreateProviderDto, @Req() req: any): Promise<any> {
-    return this.prisma.communicationProvider.create({
-      data: { ...dto, config: dto.config ? JSON.stringify(dto.config) : undefined, organizationId: orgId, createdById: req.user.id },
+  async createProvider(@Param('orgId') orgId: string, @Body() dto: CreateProviderDto, @Req() req: any): Promise<any> {
+    const configStr = typeof dto.config === 'object' ? JSON.stringify(dto.config) : dto.config;
+    const provider = await this.prisma.communicationProvider.create({
+      data: { ...dto, config: configStr, organizationId: orgId, createdById: req.user.id },
     });
+    return this.maskProviderSecrets(provider);
   }
 
   @Get('providers')
-  getProviders(@Param('orgId') orgId: string): Promise<any> {
-    return this.prisma.communicationProvider.findMany({
+  async getProviders(@Param('orgId') orgId: string): Promise<any> {
+    const providers = await this.prisma.communicationProvider.findMany({
       where: { organizationId: orgId, isDeleted: false },
       orderBy: { priority: 'asc' },
     });
+    return providers.map((p) => this.maskProviderSecrets(p));
   }
 
   @Get('providers/:providerId')
-  getProvider(@Param('orgId') orgId: string, @Param('providerId') providerId: string): Promise<any> {
-    return this.prisma.communicationProvider.findFirst({ where: { id: providerId, organizationId: orgId, isDeleted: false } });
+  async getProvider(@Param('orgId') orgId: string, @Param('providerId') providerId: string): Promise<any> {
+    const provider = await this.prisma.communicationProvider.findFirst({
+      where: { id: providerId, organizationId: orgId, isDeleted: false },
+    });
+    return this.maskProviderSecrets(provider);
   }
 
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Patch('providers/:providerId')
-  updateProvider(@Param('providerId') providerId: string, @Body() dto: UpdateProviderDto): Promise<any> {
-    return this.prisma.communicationProvider.update({ where: { id: providerId }, data: { ...dto, config: dto.config ? JSON.stringify(dto.config) : undefined } });
+  async updateProvider(@Param('providerId') providerId: string, @Body() dto: UpdateProviderDto): Promise<any> {
+    const existing = await this.prisma.communicationProvider.findUnique({ where: { id: providerId } });
+    let finalConfig: string | undefined = undefined;
+
+    if (dto.config && existing?.config) {
+      try {
+        const incomingConfig = typeof dto.config === 'string' ? JSON.parse(dto.config) : { ...dto.config };
+        const storedConfig = typeof existing.config === 'string' ? JSON.parse(existing.config as string) : existing.config;
+
+        // Merge without overwriting with masked placeholders
+        for (const [k, v] of Object.entries(incomingConfig)) {
+          if (typeof v === 'string' && (v.includes('••••') || v === '••••••••')) {
+            incomingConfig[k] = (storedConfig as any)[k];
+          }
+        }
+        finalConfig = JSON.stringify(incomingConfig);
+      } catch {
+        finalConfig = typeof dto.config === 'object' ? JSON.stringify(dto.config) : String(dto.config);
+      }
+    } else if (dto.config) {
+      finalConfig = typeof dto.config === 'object' ? JSON.stringify(dto.config) : String(dto.config);
+    }
+
+    const updated = await this.prisma.communicationProvider.update({
+      where: { id: providerId },
+      data: { ...dto, config: finalConfig } as any,
+    });
+    return this.maskProviderSecrets(updated);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Post('providers/:providerId/test')
+  async testProvider(
+    @Param('orgId') orgId: string,
+    @Param('providerId') providerId: string,
+    @Req() req: any,
+    @Body() body: any
+  ): Promise<any> {
+    return this.communicationsService.testProvider(orgId, providerId, req.user.id, body?.recipient);
   }
 
   @UseGuards(RolesGuard)

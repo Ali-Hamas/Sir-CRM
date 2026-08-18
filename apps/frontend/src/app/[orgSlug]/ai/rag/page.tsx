@@ -74,6 +74,7 @@ export default function RAGEnginePage() {
   const [loading, setLoading] = useState(true);
   const [indexing, setIndexing] = useState(false);
   const [indexMessage, setIndexMessage] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Search Tester state
   const [searchQuery, setSearchQuery] = useState('marketing plan client project');
@@ -99,6 +100,7 @@ export default function RAGEnginePage() {
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const data = await apiFetch(`/organizations/${orgSlug}/rag/stats`);
       setStats(data);
@@ -109,8 +111,9 @@ export default function RAGEnginePage() {
         embeddingProvider: data.embeddingProvider || 'OPENAI',
         embeddingModel: data.embeddingModel || 'text-embedding-3-small',
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load RAG stats:', err);
+      setApiError(err?.message || 'Failed to load RAG Knowledge Engine data');
     } finally {
       setLoading(false);
     }

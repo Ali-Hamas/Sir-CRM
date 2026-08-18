@@ -91,6 +91,7 @@ export default function AIAssistantCorePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Settings Form state
   const [formData, setFormData] = useState({
@@ -112,6 +113,7 @@ export default function AIAssistantCorePage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setApiError(null);
     try {
       const data = await apiFetch(`/organizations/${orgSlug}/ai/assistant`);
       setAssistant(data);
@@ -133,8 +135,9 @@ export default function AIAssistantCorePage() {
 
       setSessions(sessData || []);
       setExecutions(execData || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load AI Assistant Core data:', err);
+      setApiError(err?.message || 'Failed to connect to AI Assistant service');
     } finally {
       setLoading(false);
     }
@@ -270,6 +273,16 @@ export default function AIAssistantCorePage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* API Error Banner */}
+      {apiError && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm">
+          <XCircle size={18} className="shrink-0" />
+          <span><strong>Error:</strong> {apiError}</span>
+          <button onClick={fetchData} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors text-xs font-medium">
+            <RefreshCw size={13} /> Retry
+          </button>
+        </div>
+      )}
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gradient-to-r from-primary/10 via-indigo-500/5 to-purple-600/10 dark:from-primary/20 dark:via-indigo-900/20 dark:to-purple-900/20 shadow-sm gap-4">
         <div className="flex items-center gap-4">

@@ -12,7 +12,20 @@ export class AIMemoryService {
     private readonly activityService: ActivityService,
   ) {}
 
-  async createMemory(userId: string, orgId: string, dto: CreateMemoryDto) {
+  private async resolveOrgId(orgIdOrSlug: string): Promise<string> {
+    if (!orgIdOrSlug) return orgIdOrSlug;
+    const org = await this.prisma.organization.findFirst({
+      where: {
+        OR: [{ id: orgIdOrSlug }, { slug: orgIdOrSlug }],
+        isDeleted: false,
+      },
+      select: { id: true },
+    });
+    return org ? org.id : orgIdOrSlug;
+  }
+
+  async createMemory(userId: string, orgIdOrSlug: string, dto: CreateMemoryDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const memory = await (this.prisma as any).aIMemory.create({
       data: {
         organizationId: orgId,
@@ -46,18 +59,40 @@ export class AIMemoryService {
     return this.formatMemory(memory);
   }
 
-  async findAllMemories(orgId: string, query?: { search?: string; memoryType?: string; source?: string; minImportance?: number }) {
+  async findAllMemories(
+    userId: string,
+    orgIdOrSlug: string,
+    userRole?: string,
+    query?: { search?: string; memoryType?: string; source?: string; minImportance?: number }
+  ) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
+    const isPrivileged = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'MANAGER';
+
     const where: any = { organizationId: orgId, isDeleted: false };
+
+    // Tenant and User scope isolation
+    if (!isPrivileged) {
+      where.OR = [
+        { memoryType: { in: ['ORGANIZATION', 'WORKSPACE', 'CRM', 'PROJECT', 'KNOWLEDGE', 'CONVERSATION'] } },
+        { memoryType: 'USER', userId },
+      ];
+    }
 
     if (query?.memoryType) where.memoryType = query.memoryType;
     if (query?.source) where.source = query.source;
     if (query?.minImportance) where.importance = { gte: Number(query.minImportance) };
     if (query?.search) {
-      where.OR = [
-        { title: { contains: query.search } },
-        { summary: { contains: query.search } },
-        { tags: { contains: query.search } },
+      const searchWhere = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { summary: { contains: query.search, mode: 'insensitive' } },
+        { tags: { contains: query.search, mode: 'insensitive' } },
       ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchWhere }];
+        delete where.OR;
+      } else {
+        where.OR = searchWhere;
+      }
     }
 
     const memories = await (this.prisma as any).aIMemory.findMany({
@@ -71,7 +106,10 @@ export class AIMemoryService {
     return memories.map((m: any) => this.formatMemory(m));
   }
 
-  async findOneMemory(id: string, orgId: string) {
+  async findOneMemory(id: string, userId: string, orgIdOrSlug: string, userRole?: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
+    const isPrivileged = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'MANAGER';
+
     const memory = await (this.prisma as any).aIMemory.findFirst({
       where: { id, organizationId: orgId, isDeleted: false },
       include: {
@@ -80,11 +118,18 @@ export class AIMemoryService {
     });
 
     if (!memory) throw new NotFoundException('AI Memory record not found');
+
+    // Prevent cross-user private memory access
+    if (memory.memoryType === 'USER' && memory.userId && memory.userId !== userId && !isPrivileged) {
+      throw new NotFoundException('AI Memory record not found');
+    }
+
     return this.formatMemory(memory);
   }
 
-  async updateMemory(id: string, userId: string, orgId: string, dto: UpdateMemoryDto) {
-    await this.findOneMemory(id, orgId);
+  async updateMemory(id: string, userId: string, orgIdOrSlug: string, dto: UpdateMemoryDto, userRole?: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
+    const existing = await this.findOneMemory(id, userId, orgId, userRole);
 
     const updateData: any = {};
     if (dto.title !== undefined) updateData.title = dto.title;
@@ -115,8 +160,9 @@ export class AIMemoryService {
     return this.formatMemory(updated);
   }
 
-  async removeMemory(id: string, userId: string, orgId: string) {
-    await this.findOneMemory(id, orgId);
+  async removeMemory(id: string, userId: string, orgIdOrSlug: string, userRole?: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
+    await this.findOneMemory(id, userId, orgId, userRole);
 
     await (this.prisma as any).aIMemory.update({
       where: { id },
@@ -126,7 +172,8 @@ export class AIMemoryService {
     return { success: true, message: 'AI Memory archived' };
   }
 
-  async setPreference(userId: string, orgId: string, dto: CreatePreferenceDto) {
+  async setPreference(userId: string, orgIdOrSlug: string, dto: CreatePreferenceDto) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     const existing = await (this.prisma as any).aIUserPreference.findFirst({
       where: { userId, organizationId: orgId, preferenceKey: dto.preferenceKey },
     });
@@ -152,7 +199,8 @@ export class AIMemoryService {
     });
   }
 
-  async getPreferences(userId: string, orgId: string) {
+  async getPreferences(userId: string, orgIdOrSlug: string) {
+    const orgId = await this.resolveOrgId(orgIdOrSlug);
     return (this.prisma as any).aIUserPreference.findMany({
       where: { userId, organizationId: orgId },
       orderBy: { preferenceKey: 'asc' },
@@ -173,3 +221,4 @@ export class AIMemoryService {
     };
   }
 }
+

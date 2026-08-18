@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WorkflowsExecutionService } from '../workflows/workflows-execution.service';
+import { Role } from '../../common/roles';
 
 @Injectable()
 export class ProjectsService {
@@ -13,14 +14,31 @@ export class ProjectsService {
     private workflowsExecutionService: WorkflowsExecutionService,
   ) {}
 
-  private async generateProjectCode(orgId: string) {
-    const count = await this.prisma.project.count({ where: { organizationId: orgId } });
+  private async resolveOrgId(orgIdOrSlug: string): Promise<string> {
+    const org = await this.prisma.organization.findFirst({
+      where: { OR: [{ id: orgIdOrSlug }, { slug: orgIdOrSlug }] },
+      select: { id: true },
+    });
+    return org ? org.id : orgIdOrSlug;
+  }
+
+  private async generateProjectCode(realOrgId: string) {
+    const count = await this.prisma.project.count({ where: { organizationId: realOrgId } });
     const num = (count + 1).toString().padStart(4, '0');
     return `PRJ-${num}`;
   }
 
   async create(orgId: string, userId: string, data: any) {
-    const projectCode = await this.generateProjectCode(orgId);
+    const realOrgId = await this.resolveOrgId(orgId);
+    const projectCode = await this.generateProjectCode(realOrgId);
+
+    const startDate = data.startDate ? new Date(data.startDate) : null;
+    const endDate = data.endDate ? new Date(data.endDate) : null;
+    if (startDate && endDate && startDate > endDate) {
+      throw new BadRequestException('Start date cannot be after end date');
+    }
+
+    const progress = Math.min(100, Math.max(0, parseInt(data.progress, 10) || 0));
 
     const project = await this.prisma.project.create({
       data: {
@@ -31,14 +49,14 @@ export class ProjectsService {
         priority: data.priority || 'MEDIUM',
         budget: data.budget ? parseFloat(data.budget) : null,
         currency: data.currency || 'USD',
-        startDate: data.startDate ? new Date(data.startDate) : null,
-        endDate: data.endDate ? new Date(data.endDate) : null,
-        progress: data.progress || 0,
+        startDate,
+        endDate,
+        progress,
         clientId: data.clientId || null,
         companyId: data.companyId || null,
         contractId: data.contractId || null,
         projectManagerId: data.projectManagerId || null,
-        organizationId: orgId,
+        organizationId: realOrgId,
         workspaceId: data.workspaceId || null,
         createdById: userId,
         updatedBy: userId,
@@ -52,7 +70,7 @@ export class ProjectsService {
     });
 
     // Add initial team members
-    if (data.teamMemberIds && data.teamMemberIds.length > 0) {
+    if (data.teamMemberIds && Array.isArray(data.teamMemberIds) && data.teamMemberIds.length > 0) {
       await this.prisma.projectMember.createMany({
         data: data.teamMemberIds.map((uid: string) => ({
           projectId: project.id,
@@ -65,7 +83,7 @@ export class ProjectsService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_CREATED',
       module: 'PROJECTS',
       entityType: 'PROJECT',
@@ -75,7 +93,7 @@ export class ProjectsService {
 
     this.workflowsExecutionService.handleTrigger({
       type: 'PROJECT_CREATED',
-      organizationId: orgId,
+      organizationId: realOrgId,
       userId,
       entityType: 'PROJECT',
       entityId: project.id,
@@ -93,29 +111,48 @@ export class ProjectsService {
       priority?: string;
       companyId?: string;
       projectManagerId?: string;
+      workspaceId?: string;
       sortBy?: string;
       sortOrder?: string;
       page?: number;
       limit?: number;
     } = {},
+    user?: { id: string; role: string },
   ) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const page = query.page || 1;
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
-    const where: any = { organizationId: orgId, isDeleted: false };
+    const where: any = { organizationId: realOrgId, isDeleted: false };
 
     if (query.status) where.status = query.status;
     if (query.priority) where.priority = query.priority;
     if (query.companyId) where.companyId = query.companyId;
     if (query.projectManagerId) where.projectManagerId = query.projectManagerId;
+    if (query.workspaceId) where.workspaceId = query.workspaceId;
+
+    // RBAC client restriction
+    if (user?.role === Role.CLIENT) {
+      const clientRecord = await this.prisma.client.findFirst({
+        where: { organizationId: realOrgId, OR: [{ id: user.id }, { companyId: user.id }] },
+      });
+      if (clientRecord) {
+        where.OR = [{ clientId: clientRecord.id }, { companyId: clientRecord.companyId }];
+      } else {
+        where.createdById = user.id;
+      }
+    }
 
     if (query.search) {
-      where.OR = [
-        { projectName: { contains: query.search, mode: 'insensitive' } },
-        { projectCode: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
-      ];
+      where.AND = where.AND || [];
+      where.AND.push({
+        OR: [
+          { projectName: { contains: query.search, mode: 'insensitive' } },
+          { projectCode: { contains: query.search, mode: 'insensitive' } },
+          { description: { contains: query.search, mode: 'insensitive' } },
+        ],
+      });
     }
 
     const orderBy: any = {};
@@ -137,7 +174,7 @@ export class ProjectsService {
           client: { select: { id: true, companyName: true } },
           contract: { select: { id: true, title: true } },
           projectManager: { select: { id: true, firstName: true, lastName: true } },
-          _count: { select: { members: true, phases: true, milestones: true } },
+          _count: { select: { members: true, phases: true, milestones: true, tasks: true } },
         },
       }),
       this.prisma.project.count({ where }),
@@ -146,9 +183,10 @@ export class ProjectsService {
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async findOne(orgId: string, projectId: string) {
+  async findOne(orgId: string, projectId: string, user?: { id: string; role: string }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
       include: {
         company: { select: { id: true, name: true, industry: true } },
         client: { select: { id: true, companyName: true, status: true } },
@@ -164,18 +202,29 @@ export class ProjectsService {
         activities: {
           include: { user: { select: { id: true, firstName: true, lastName: true, email: true, profilePictureUrl: true } } },
           orderBy: { createdAt: 'desc' },
-          take: 20,
+          take: 30,
         },
       },
     });
 
     if (!project) throw new NotFoundException('Project not found');
+
+    if (user?.role === Role.CLIENT) {
+      const clientRecord = await this.prisma.client.findFirst({
+        where: { organizationId: realOrgId, OR: [{ id: user.id }, { companyId: user.id }] },
+      });
+      if (clientRecord && project.clientId !== clientRecord.id && project.companyId !== clientRecord.companyId && project.createdById !== user.id) {
+        throw new ForbiddenException('You do not have permission to view this project');
+      }
+    }
+
     return project;
   }
 
   async update(orgId: string, projectId: string, userId: string, data: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Project not found');
 
@@ -188,11 +237,12 @@ export class ProjectsService {
     if (data.currency !== undefined) updateData.currency = data.currency;
     if (data.startDate !== undefined) updateData.startDate = data.startDate ? new Date(data.startDate) : null;
     if (data.endDate !== undefined) updateData.endDate = data.endDate ? new Date(data.endDate) : null;
-    if (data.progress !== undefined) updateData.progress = parseInt(data.progress, 10) || 0;
+    if (data.progress !== undefined) updateData.progress = Math.min(100, Math.max(0, parseInt(data.progress, 10) || 0));
     if (data.clientId !== undefined) updateData.clientId = data.clientId || null;
     if (data.companyId !== undefined) updateData.companyId = data.companyId || null;
     if (data.contractId !== undefined) updateData.contractId = data.contractId || null;
     if (data.projectManagerId !== undefined) updateData.projectManagerId = data.projectManagerId || null;
+    if (data.workspaceId !== undefined) updateData.workspaceId = data.workspaceId || null;
 
     updateData.updatedBy = userId;
 
@@ -204,7 +254,7 @@ export class ProjectsService {
     if (data.status === 'COMPLETED') {
       this.workflowsExecutionService.handleTrigger({
         type: 'PROJECT_COMPLETED',
-        organizationId: orgId,
+        organizationId: realOrgId,
         userId,
         entityType: 'PROJECT',
         entityId: projectId,
@@ -216,26 +266,29 @@ export class ProjectsService {
       where: { id: projectId },
       include: {
         company: { select: { id: true, name: true } },
+        client: { select: { id: true, companyName: true } },
+        contract: { select: { id: true, title: true, contractNumber: true } },
         projectManager: { select: { id: true, firstName: true, lastName: true, email: true } },
       },
     });
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_UPDATED',
       module: 'PROJECTS',
       entityType: 'PROJECT',
       entityId: projectId,
-      metadata: { code: existing.projectCode, name: project.projectName },
+      metadata: { code: existing.projectCode, name: project?.projectName || existing.projectName },
     });
 
     return project;
   }
 
   async remove(orgId: string, projectId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const existing = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!existing) throw new NotFoundException('Project not found');
 
@@ -246,7 +299,7 @@ export class ProjectsService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_DELETED',
       module: 'PROJECTS',
       entityType: 'PROJECT',
@@ -259,8 +312,9 @@ export class ProjectsService {
 
   // --- Members ---
   async addMember(orgId: string, projectId: string, userId: string, data: { memberId: string; role?: string }) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -283,7 +337,7 @@ export class ProjectsService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_MEMBER_ADDED',
       module: 'PROJECTS',
       entityType: 'PROJECT',
@@ -295,8 +349,9 @@ export class ProjectsService {
   }
 
   async removeMember(orgId: string, projectId: string, userId: string, memberId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -306,7 +361,7 @@ export class ProjectsService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_MEMBER_REMOVED',
       module: 'PROJECTS',
       entityType: 'PROJECT',
@@ -319,8 +374,9 @@ export class ProjectsService {
 
   // --- Phases ---
   async addPhase(orgId: string, projectId: string, userId: string, data: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -339,7 +395,7 @@ export class ProjectsService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_PHASE_ADDED',
       module: 'PROJECTS',
       entityType: 'PROJECT',
@@ -351,8 +407,9 @@ export class ProjectsService {
   }
 
   async updatePhase(orgId: string, projectId: string, phaseId: string, userId: string, data: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -378,8 +435,9 @@ export class ProjectsService {
   }
 
   async removePhase(orgId: string, projectId: string, phaseId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -392,8 +450,9 @@ export class ProjectsService {
 
   // --- Milestones ---
   async addMilestone(orgId: string, projectId: string, userId: string, data: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -411,7 +470,7 @@ export class ProjectsService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_MILESTONE_ADDED',
       module: 'PROJECTS',
       entityType: 'PROJECT',
@@ -423,8 +482,9 @@ export class ProjectsService {
   }
 
   async updateMilestone(orgId: string, projectId: string, milestoneId: string, userId: string, data: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -449,8 +509,9 @@ export class ProjectsService {
   }
 
   async removeMilestone(orgId: string, projectId: string, milestoneId: string, userId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId: orgId, isDeleted: false },
+      where: { id: projectId, organizationId: realOrgId, isDeleted: false },
     });
     if (!project) throw new NotFoundException('Project not found');
 
@@ -463,24 +524,25 @@ export class ProjectsService {
 
   // --- Dashboard Stats ---
   async getStats(orgId: string) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const [total, byStatus, byPriority, totalBudget, completedCount] = await Promise.all([
-      this.prisma.project.count({ where: { organizationId: orgId, isDeleted: false } }),
+      this.prisma.project.count({ where: { organizationId: realOrgId, isDeleted: false } }),
       this.prisma.project.groupBy({
         by: ['status'],
-        where: { organizationId: orgId, isDeleted: false },
+        where: { organizationId: realOrgId, isDeleted: false },
         _count: true,
       }),
       this.prisma.project.groupBy({
         by: ['priority'],
-        where: { organizationId: orgId, isDeleted: false },
+        where: { organizationId: realOrgId, isDeleted: false },
         _count: true,
       }),
       this.prisma.project.aggregate({
-        where: { organizationId: orgId, isDeleted: false, budget: { not: null } },
+        where: { organizationId: realOrgId, isDeleted: false, budget: { not: null } },
         _sum: { budget: true },
       }),
       this.prisma.project.count({
-        where: { organizationId: orgId, isDeleted: false, status: 'COMPLETED' },
+        where: { organizationId: realOrgId, isDeleted: false, status: 'COMPLETED' },
       }),
     ]);
 
@@ -495,14 +557,15 @@ export class ProjectsService {
 
   // --- Create from Contract ---
   async createFromContract(orgId: string, contractId: string, userId: string, data?: any) {
+    const realOrgId = await this.resolveOrgId(orgId);
     const contract = await this.prisma.contract.findFirst({
-      where: { id: contractId, organizationId: orgId, isDeleted: false },
+      where: { id: contractId, organizationId: realOrgId, isDeleted: false },
       include: { company: true, contact: true },
     });
     if (!contract) throw new NotFoundException('Contract not found');
     if (contract.status !== 'ACTIVE') throw new BadRequestException('Only active contracts can have projects');
 
-    const projectCode = await this.generateProjectCode(orgId);
+    const projectCode = await this.generateProjectCode(realOrgId);
 
     const project = await this.prisma.project.create({
       data: {
@@ -519,7 +582,7 @@ export class ProjectsService {
         clientId: null,
         contractId: contract.id,
         projectManagerId: userId,
-        organizationId: orgId,
+        organizationId: realOrgId,
         workspaceId: contract.workspaceId,
         createdById: userId,
         updatedBy: userId,
@@ -544,7 +607,7 @@ export class ProjectsService {
 
     await this.activityService.logActivity({
       userId,
-      organizationId: orgId,
+      organizationId: realOrgId,
       action: 'PROJECT_CREATED_FROM_CONTRACT',
       module: 'PROJECTS',
       entityType: 'PROJECT',

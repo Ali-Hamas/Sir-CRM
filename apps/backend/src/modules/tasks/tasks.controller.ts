@@ -19,6 +19,7 @@ export class TasksController {
 
   @Get()
   findAll(
+    @Req() req: any,
     @Param('orgId') orgId: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
@@ -33,11 +34,24 @@ export class TasksController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.tasksService.findAll(orgId, {
-      search, status, priority, projectId, milestoneId, assigneeId, reporterId, label, sortBy, sortOrder,
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
-    });
+    return this.tasksService.findAll(
+      orgId,
+      {
+        search,
+        status,
+        priority,
+        projectId,
+        milestoneId,
+        assigneeId,
+        reporterId,
+        label,
+        sortBy,
+        sortOrder,
+        page: page ? parseInt(page, 10) : undefined,
+        limit: limit ? parseInt(limit, 10) : undefined,
+      },
+      req.user,
+    );
   }
 
   @Get('stats')
@@ -45,14 +59,27 @@ export class TasksController {
     return this.tasksService.getStats(orgId, projectId);
   }
 
+  @Get('kanban')
+  getKanbanBoardDefault(
+    @Req() req: any,
+    @Param('orgId') orgId: string,
+    @Query('projectId') projectId?: string,
+  ) {
+    return this.tasksService.getKanbanBoard(orgId, projectId, req.user);
+  }
+
   @Get('kanban/:projectId')
-  getKanbanBoard(@Param('orgId') orgId: string, @Param('projectId') projectId: string) {
-    return this.tasksService.getKanbanBoard(orgId, projectId);
+  getKanbanBoard(
+    @Req() req: any,
+    @Param('orgId') orgId: string,
+    @Param('projectId') projectId: string,
+  ) {
+    return this.tasksService.getKanbanBoard(orgId, projectId, req.user);
   }
 
   @Get(':taskId')
-  findOne(@Param('orgId') orgId: string, @Param('taskId') taskId: string) {
-    return this.tasksService.findOne(orgId, taskId);
+  findOne(@Req() req: any, @Param('orgId') orgId: string, @Param('taskId') taskId: string) {
+    return this.tasksService.findOne(orgId, taskId, req.user);
   }
 
   @UseGuards(RolesGuard)
@@ -64,7 +91,7 @@ export class TasksController {
     @Param('taskId') taskId: string,
     @Body() data: any,
   ) {
-    return this.tasksService.update(orgId, taskId, req.user.id, data);
+    return this.tasksService.update(orgId, taskId, req.user.id, data, req.user.role);
   }
 
   @UseGuards(RolesGuard)
@@ -76,7 +103,7 @@ export class TasksController {
     @Param('taskId') taskId: string,
     @Body('status') status: string,
   ) {
-    return this.tasksService.updateStatus(orgId, taskId, req.user.id, status);
+    return this.tasksService.updateStatus(orgId, taskId, req.user.id, status, req.user.role);
   }
 
   @UseGuards(RolesGuard)

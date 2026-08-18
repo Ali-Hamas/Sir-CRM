@@ -14,11 +14,12 @@ export class TimeTrackingController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   @Post()
   create(@Req() req: any, @Param('orgId') orgId: string, @Body() data: any) {
-    return this.timeTrackingService.createTimeEntry(orgId, req.user.id, data);
+    return this.timeTrackingService.createTimeEntry(orgId, req.user.id, data, req.user.role);
   }
 
   @Get()
   findAll(
+    @Req() req: any,
     @Param('orgId') orgId: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
@@ -33,11 +34,24 @@ export class TimeTrackingController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.timeTrackingService.findAll(orgId, {
-      search, status, billable, projectId, taskId, userId, startDate, endDate, sortBy, sortOrder,
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
-    });
+    return this.timeTrackingService.findAll(
+      orgId,
+      {
+        search,
+        status,
+        billable,
+        projectId,
+        taskId,
+        userId,
+        startDate,
+        endDate,
+        sortBy,
+        sortOrder,
+        page: page ? parseInt(page, 10) : undefined,
+        limit: limit ? parseInt(limit, 10) : undefined,
+      },
+      req.user,
+    );
   }
 
   @Get('my')
@@ -98,14 +112,14 @@ export class TimeTrackingController {
     @Param('entryId') entryId: string,
     @Body() data: any,
   ) {
-    return this.timeTrackingService.update(orgId, entryId, req.user.id, data);
+    return this.timeTrackingService.update(orgId, entryId, req.user.id, data, req.user.role);
   }
 
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   @Post(':entryId/submit')
   submit(@Req() req: any, @Param('orgId') orgId: string, @Param('entryId') entryId: string) {
-    return this.timeTrackingService.submit(orgId, entryId, req.user.id);
+    return this.timeTrackingService.submit(orgId, entryId, req.user.id, req.user.role);
   }
 
   @UseGuards(RolesGuard)
@@ -116,9 +130,9 @@ export class TimeTrackingController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER, Role.EMPLOYEE)
   @Delete(':entryId')
   remove(@Req() req: any, @Param('orgId') orgId: string, @Param('entryId') entryId: string) {
-    return this.timeTrackingService.remove(orgId, entryId, req.user.id);
+    return this.timeTrackingService.remove(orgId, entryId, req.user.id, req.user.role);
   }
 }
