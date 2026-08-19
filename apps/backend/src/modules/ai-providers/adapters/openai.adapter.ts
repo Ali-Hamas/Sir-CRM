@@ -35,7 +35,7 @@ export class OpenAIAdapter implements ProviderAdapter {
     const messages: any[] = [];
 
     // Combine system prompt, RAG context, and memories
-    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for BlackDesk OS.';
+    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for Britsync.';
     if (options.ragContext && options.ragContext.length > 0) {
       systemContent += '\n\n### RETRIEVED KNOWLEDGE CONTEXT:\n' + options.ragContext.join('\n---\n');
     }

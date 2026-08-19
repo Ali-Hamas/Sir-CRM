@@ -1,6 +1,6 @@
-# BlackDesk OS — Production Deployment Guide
+# Britsync — Production Deployment Guide
 
-This document provides step-by-step instructions for building, containerizing, configuring, and deploying BlackDesk OS in a enterprise production environment.
+This document provides step-by-step instructions for building, containerizing, configuring, and deploying Britsync in a enterprise production environment.
 
 ---
 
@@ -51,12 +51,12 @@ Ensure the following variables are configured with production values:
 
 | Variable | Description | Example / Required Format |
 |---|---|---|
-| `DATABASE_URL` | MongoDB Connection URI | `mongodb+srv://user:pass@cluster.mongodb.net/BlackDesk` |
+| `DATABASE_URL` | MongoDB Connection URI | `mongodb+srv://user:pass@cluster.mongodb.net/Britsync` |
 | `JWT_SECRET` | Secret key for JWT signing | 64+ random hex characters |
 | `JWT_REFRESH_SECRET` | Secret key for Refresh Tokens | 64+ random hex characters |
 | `COOKIE_SECRET` | Signing secret for HttpOnly cookies | 32+ random characters |
 | `ENCRYPTION_KEY` | AES-256-GCM encryption key | 32-byte (64 hex characters) |
-| `ALLOWED_ORIGINS` | Permitted CORS origins | `https://blackdesk.com,https://app.blackdesk.com` |
+| `ALLOWED_ORIGINS` | Permitted CORS origins | `https://Britsync.com,https://app.Britsync.com` |
 | `OPENAI_API_KEY` | OpenAI API Key | `sk-proj-...` |
 | `ANTHROPIC_API_KEY` | Anthropic Claude API Key | `sk-ant-...` |
 | `GEMINI_API_KEY` | Google Gemini API Key | `AIzaSy...` |
@@ -71,8 +71,8 @@ Ensure the following variables are configured with production values:
 
 1. Clone the repository and navigate to root:
    ```bash
-   git clone https://github.com/blackdesk/blackdesk-os.git
-   cd blackdesk-os
+   git clone https://github.com/Britsync/Britsync-os.git
+   cd Britsync-os
    ```
 
 2. Copy production environment configuration:
@@ -112,12 +112,12 @@ Ensure the following variables are configured with production values:
 
 3. Start backend using PM2:
    ```bash
-   pm2 start apps/backend/dist/main.js --name "blackdesk-backend" -i max
+   pm2 start apps/backend/dist/main.js --name "Britsync-backend" -i max
    ```
 
 4. Start frontend using PM2:
    ```bash
-   pm2 start "node apps/frontend/.next/standalone/server.js" --name "blackdesk-frontend"
+   pm2 start "node apps/frontend/.next/standalone/server.js" --name "Britsync-frontend"
    ```
 
 ---

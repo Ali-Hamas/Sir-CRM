@@ -81,7 +81,7 @@ async function bootstrap() {
   });
 
   // Cookie Security
-  const cookieSecret = process.env.COOKIE_SECRET || 'blackdesk-cookie-secret';
+  const cookieSecret = process.env.COOKIE_SECRET || 'Britsync-cookie-secret';
   app.use(cookieParser(cookieSecret));
 
   // Security Headers Middleware
@@ -116,7 +116,7 @@ async function bootstrap() {
       const hashedPassword = await bcrypt.hash('password123', 10);
       await prismaService.user.create({
         data: {
-          email: 'admin@blackdesk.com',
+          email: 'admin@Britsync.com',
           passwordHash: hashedPassword,
           firstName: 'System',
           lastName: 'Admin',
@@ -125,7 +125,7 @@ async function bootstrap() {
         },
       });
       logger.log('--------------------------------------------------');
-      logger.log('[SEED] Created default admin user: admin@blackdesk.com');
+      logger.log('[SEED] Created default admin user: admin@Britsync.com');
       logger.log('--------------------------------------------------');
     }
   } catch (error) {
@@ -134,6 +134,6 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
-  logger.log(`[NestApplication] BlackDesk Backend running on http://localhost:${port} in ${process.env.NODE_ENV || 'development'} mode`);
+  logger.log(`[NestApplication] Britsync Backend running on http://localhost:${port} in ${process.env.NODE_ENV || 'development'} mode`);
 }
 bootstrap();

@@ -7,7 +7,7 @@ export class CredentialEncryptionService {
   private readonly secretKey: Buffer;
 
   constructor() {
-    const rawKey = process.env.ENCRYPTION_SECRET || 'blackdesk-enterprise-encryption-secret-key-32bytes!';
+    const rawKey = process.env.ENCRYPTION_SECRET || 'Britsync-enterprise-encryption-secret-key-32bytes!';
     // Ensure key is exactly 32 bytes
     this.secretKey = crypto.createHash('sha256').update(rawKey).digest();
   }

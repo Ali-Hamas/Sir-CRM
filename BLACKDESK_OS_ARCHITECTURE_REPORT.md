@@ -1,8 +1,8 @@
-# BlackDesk OS - Complete Architecture & Technical Documentation
+# Britsync - Complete Architecture & Technical Documentation
 
 ## Executive Summary
 
-BlackDesk OS is an enterprise SaaS platform built as a **Turborepo monorepo** managed with **pnpm**. It provides a full-featured business operating system with **CRM, Project Management, Knowledge Base, Workflow Automation, Document Management, and an Enterprise AI Platform** with multi-provider LLM support, RAG, AI agents, assistants, and executive dashboards. The backend is built with **NestJS (Node.js)**, the frontend with **Next.js 14 (React)**, and the database layer uses **Prisma ORM targeting MongoDB Atlas** with a secondary **SQLite** setup for local development.
+Britsync is an enterprise SaaS platform built as a **Turborepo monorepo** managed with **pnpm**. It provides a full-featured business operating system with **CRM, Project Management, Knowledge Base, Workflow Automation, Document Management, and an Enterprise AI Platform** with multi-provider LLM support, RAG, AI agents, assistants, and executive dashboards. The backend is built with **NestJS (Node.js)**, the frontend with **Next.js 14 (React)**, and the database layer uses **Prisma ORM targeting MongoDB Atlas** with a secondary **SQLite** setup for local development.
 
 ---
 
@@ -36,7 +36,7 @@ BlackDesk OS is an enterprise SaaS platform built as a **Turborepo monorepo** ma
 ## 2. Folder Structure
 
 ```
-blackdesk-os/
+Britsync-os/
 ├── .env                          # Root environment variables (MongoDB URL, JWT secret)
 ├── docker-compose.yml            # PostgreSQL + MinIO (legacy, not currently used)
 ├── package.json                  # Root workspace config
@@ -65,7 +65,7 @@ blackdesk-os/
 │       ├── next.config.mjs       # API proxy rewrite to localhost:3001
 │       └── tailwind.config.ts
 └── packages/
-    └── database/                 # @blackdesk/database
+    └── database/                 # @Britsync/database
         ├── index.ts              # Re-exports @prisma/client
         ├── prisma/
         │   └── schema.prisma     # 124 MongoDB models (2746 lines)
@@ -118,7 +118,7 @@ blackdesk-os/
                               ▼
               ┌────────────────────────────┐
               │     MongoDB Atlas           │
-              │  (blackdesk cluster)        │
+              │  (Britsync cluster)        │
               └────────────────────────────┘
 ```
 
@@ -267,7 +267,7 @@ module-name/
 - **Guards**: `JwtAuthGuard` (authenticated), `RolesGuard` (role-based access)
 - **Roles**: SUPER_ADMIN, ADMIN, MANAGER, EMPLOYEE, CLIENT (defined in `common/roles.ts`)
 - **Logging**: Every mutation logs to `UserActivity` via `ActivityService`
-- **Auto-seed**: On empty database, creates admin@blackdesk.com / password123
+- **Auto-seed**: On empty database, creates admin@Britsync.com / password123
 
 ---
 
@@ -1004,7 +1004,7 @@ The AI Platform is a comprehensive multi-provider, multi-agent system with 8 sub
 3. **Mixed DB approach** — Prisma schema + raw SQLite scripts for the same data
 4. **No pagination defaults** — some list endpoints lack pagination
 5. **Console logging** — `console.warn` and `console.log` used instead of proper Logger in some places (e.g., auth.service.ts)
-6. **Hardcoded secrets in code** — `super-secret-key-for-development` JWT secret and `blackdesk-enterprise-ai-secret-key-2026` encryption key in source
+6. **Hardcoded secrets in code** — `super-secret-key-for-development` JWT secret and `Britsync-enterprise-ai-secret-key-2026` encryption key in source
 
 ### Security Concerns
 1. **MongoDB credentials in .env** — committed to repository with real credentials

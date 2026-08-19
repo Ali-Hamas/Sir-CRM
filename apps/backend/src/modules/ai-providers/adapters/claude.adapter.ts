@@ -29,7 +29,7 @@ export class ClaudeAdapter implements ProviderAdapter {
       throw new Error('Anthropic Claude API Key not configured in system or environment');
     }
 
-    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for BlackDesk OS.';
+    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for Britsync.';
     if (options.ragContext && options.ragContext.length > 0) {
       systemContent += '\n\n### RETRIEVED KNOWLEDGE CONTEXT:\n' + options.ragContext.join('\n---\n');
     }

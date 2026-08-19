@@ -1,5 +1,5 @@
 /**
- * BlackDesk OS - Automated MongoDB Backup & Retention Engine
+ * Britsync - Automated MongoDB Backup & Retention Engine
  * Cross-platform script (Windows/Linux/macOS)
  */
 
@@ -10,7 +10,7 @@ const zlib = require('zlib');
 
 const BACKUP_DIR = path.join(__dirname, '..', 'backups');
 const RETENTION_DAYS = parseInt(process.env.BACKUP_RETENTION_DAYS || '30', 10);
-const MONGO_URI = process.env.DATABASE_URL || 'mongodb://shaheerkhanhyd6_db_user:BlackDesk2024!@localhost:27017/BlackDesk';
+const MONGO_URI = process.env.DATABASE_URL || 'mongodb://shaheerkhanhyd6_db_user:Britsync2024!@localhost:27017/Britsync';
 
 function ensureDirectoryExists(dir) {
   if (!fs.existsSync(dir)) {
@@ -24,12 +24,12 @@ function formatDate(date) {
 
 async function runBackup() {
   console.log('==================================================');
-  console.log('[BACKUP] Starting BlackDesk OS MongoDB Automated Backup');
+  console.log('[BACKUP] Starting Britsync MongoDB Automated Backup');
   console.log('==================================================');
 
   ensureDirectoryExists(BACKUP_DIR);
   const timestamp = formatDate(new Date());
-  const backupFileName = `blackdesk-backup-${timestamp}.json`;
+  const backupFileName = `Britsync-backup-${timestamp}.json`;
   const backupFilePath = path.join(BACKUP_DIR, backupFileName);
   const archivePath = `${backupFilePath}.gz`;
 

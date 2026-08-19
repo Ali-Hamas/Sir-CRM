@@ -25,7 +25,7 @@ export class OpenRouterAdapter implements ProviderAdapter {
 
     const messages: any[] = [];
 
-    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for BlackDesk OS.';
+    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for Britsync.';
     if (options.ragContext && options.ragContext.length > 0) {
       systemContent += '\n\n### RETRIEVED KNOWLEDGE CONTEXT:\n' + options.ragContext.join('\n---\n');
     }
@@ -60,8 +60,8 @@ export class OpenRouterAdapter implements ProviderAdapter {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${key}`,
-          'HTTP-Referer': 'https://blackdesk.enterprise',
-          'X-Title': 'BlackDesk OS Enterprise AI Platform',
+          'HTTP-Referer': 'https://Britsync.enterprise',
+          'X-Title': 'Britsync Enterprise AI Platform',
         },
         body: JSON.stringify(body),
         signal: controller.signal,

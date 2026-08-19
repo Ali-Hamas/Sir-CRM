@@ -21,7 +21,7 @@ export class OllamaAdapter implements ProviderAdapter {
 
     const messages: any[] = [];
 
-    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for BlackDesk OS.';
+    let systemContent = options.systemPrompt || 'You are an enterprise AI assistant for Britsync.';
     if (options.ragContext && options.ragContext.length > 0) {
       systemContent += '\n\n### RETRIEVED KNOWLEDGE CONTEXT:\n' + options.ragContext.join('\n---\n');
     }

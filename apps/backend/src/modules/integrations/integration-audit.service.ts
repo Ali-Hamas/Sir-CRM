@@ -41,8 +41,8 @@ export class IntegrationAuditService {
 
     const seedItems = [
       {
-        name: 'GitHub Issue -> BlackDesk Task Auto-Sync',
-        description: 'Automatically convert new GitHub issues into BlackDesk project tasks.',
+        name: 'GitHub Issue -> Britsync Task Auto-Sync',
+        description: 'Automatically convert new GitHub issues into Britsync project tasks.',
         category: 'PROJECT',
         providerId: githubProv?.id || null,
         configTemplateJson: JSON.stringify({ trigger: 'github.issue.created', action: 'create_task' }),

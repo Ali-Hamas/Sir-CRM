@@ -243,7 +243,7 @@ export class ToolExecutorService {
           success: true,
           totalProjects: 4,
           projects: [
-            { id: 'proj-1', projectName: 'BlackDesk OS Core Deployment', projectCode: 'BOS-01', progress: 85, status: 'IN_PROGRESS' },
+            { id: 'proj-1', projectName: 'Britsync Core Deployment', projectCode: 'BOS-01', progress: 85, status: 'IN_PROGRESS' },
             { id: 'proj-2', projectName: 'AI Integration Pipeline', projectCode: 'AI-02', progress: 40, status: 'PLANNING' },
             { id: 'proj-3', projectName: 'Q3 Enterprise Migration', projectCode: 'ENT-03', progress: 100, status: 'COMPLETED' },
           ],
@@ -316,7 +316,7 @@ export class ToolExecutorService {
         return {
           success: true,
           documentId: params.documentId,
-          downloadUrl: `https://blackdesk.internal/api/documents/${params.documentId}/download`,
+          downloadUrl: `https://Britsync.internal/api/documents/${params.documentId}/download`,
           expiresInSeconds: 3600,
         };
 

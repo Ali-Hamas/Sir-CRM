@@ -1,16 +1,16 @@
-# BlackDesk OS — Monitoring & Observability Guide
+# Britsync — Monitoring & Observability Guide
 
-This guide details the monitoring architecture, health check endpoints, and logging systems in BlackDesk OS.
+This guide details the monitoring architecture, health check endpoints, and logging systems in Britsync.
 
 ---
 
 ## 1. Observability Overview
 
-BlackDesk OS provides comprehensive system diagnostics, application logs, database health monitoring, and performance telemetry.
+Britsync provides comprehensive system diagnostics, application logs, database health monitoring, and performance telemetry.
 
 ```
  +-----------------------------------------------------------------+
- |                    BlackDesk OS Observability                    |
+ |                    Britsync Observability                    |
  +------------------+-------------------+----------------------------+
  | Application Logs | Performance Logs  | Health & Readiness Metrics |
  +------------------+-------------------+----------------------------+

@@ -295,7 +295,7 @@ export class WorkflowsExecutionService {
       }
 
       case 'EMAIL_ACTION': {
-        return { type: 'EMAIL_ACTION_FOUNDATION', recipient: config.recipient || 'placeholder@blackdesk.os', status: 'Queued' };
+        return { type: 'EMAIL_ACTION_FOUNDATION', recipient: config.recipient || 'placeholder@Britsync.os', status: 'Queued' };
       }
 
       case 'DELAY_ACTION': {

@@ -1,6 +1,6 @@
-# BlackDesk OS — Security Hardening & Audit Checklist
+# Britsync — Security Hardening & Audit Checklist
 
-This document details all security mechanisms implemented in BlackDesk OS.
+This document details all security mechanisms implemented in Britsync.
 
 ---
 

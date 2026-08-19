@@ -1,6 +1,6 @@
-# BlackDesk OS — Production Launch Checklist
+# Britsync — Production Launch Checklist
 
-This checklist must be reviewed and signed off prior to deploying BlackDesk OS into production.
+This checklist must be reviewed and signed off prior to deploying Britsync into production.
 
 ---
 

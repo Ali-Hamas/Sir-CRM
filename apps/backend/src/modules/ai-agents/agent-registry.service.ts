@@ -22,7 +22,7 @@ export class AgentRegistryService {
       role: 'Sales Intelligence & Lead Qualification Specialist',
       department: 'Sales',
       description: 'Automates lead qualification, CRM analysis, proposal recommendations, and sales pipeline tracking.',
-      systemPrompt: 'You are the Enterprise Sales Agent for BlackDesk OS. You have full visibility over CRM records (Companies, Contacts, Leads, Opportunities, Meetings, Contracts, Proposals). Your goal is to qualify leads, analyze deal pipelines, recommend proposals, summarize customer meetings, and draft follow-up actions.',
+      systemPrompt: 'You are the Enterprise Sales Agent for Britsync. You have full visibility over CRM records (Companies, Contacts, Leads, Opportunities, Meetings, Contracts, Proposals). Your goal is to qualify leads, analyze deal pipelines, recommend proposals, summarize customer meetings, and draft follow-up actions.',
       capabilities: [
         { capability: 'LEAD_QUALIFICATION', displayName: 'Lead Qualification', description: 'Evaluate leads based on BANT score and engagement', enabled: true },
         { capability: 'PIPELINE_ANALYSIS', displayName: 'Sales Pipeline Analysis', description: 'Analyze stage velocity, conversion rates, and revenue risks', enabled: true },
@@ -54,7 +54,7 @@ export class AgentRegistryService {
       role: 'Project Delivery & Risk Tracking Specialist',
       department: 'Project Management',
       description: 'Tracks project health, flags risks, analyzes deadlines, recommends resource allocation, and reports progress.',
-      systemPrompt: 'You are the Project Manager Agent for BlackDesk OS. You monitor Projects, Tasks, Milestones, Time Tracking, and Resource Allocations. Your goal is to detect delivery risks early, prioritize tasks, optimize resource loading, and ensure milestones are hit.',
+      systemPrompt: 'You are the Project Manager Agent for Britsync. You monitor Projects, Tasks, Milestones, Time Tracking, and Resource Allocations. Your goal is to detect delivery risks early, prioritize tasks, optimize resource loading, and ensure milestones are hit.',
       capabilities: [
         { capability: 'PROJECT_SUMMARIES', displayName: 'Project Summaries', description: 'Generate high-level and granular sprint/project summaries', enabled: true },
         { capability: 'RISK_DETECTION', displayName: 'Risk Detection', description: 'Identify bottleneck tasks, overdue milestones, and scope creep', enabled: true },
@@ -84,7 +84,7 @@ export class AgentRegistryService {
       role: 'Enterprise Knowledge & RAG Intelligence Specialist',
       department: 'Knowledge',
       description: 'Answers internal company questions, summarizes documentation, retrieves knowledge base articles, and recommends content.',
-      systemPrompt: 'You are the Knowledge Assistant for BlackDesk OS. You have direct access to the Knowledge Base, Document Library, and RAG Vector Index. Your goal is to deliver accurate answers grounded in enterprise documentation, summarize long documents, and suggest relevant reading.',
+      systemPrompt: 'You are the Knowledge Assistant for Britsync. You have direct access to the Knowledge Base, Document Library, and RAG Vector Index. Your goal is to deliver accurate answers grounded in enterprise documentation, summarize long documents, and suggest relevant reading.',
       capabilities: [
         { capability: 'ANSWER_QUESTIONS', displayName: 'Answer Internal Questions', description: 'Synthesize verified answers from company knowledge base', enabled: true },
         { capability: 'DOCUMENT_SUMMARIES', displayName: 'Document Summaries', description: 'Extract executive summaries, key terms, and takeaways', enabled: true },
@@ -109,7 +109,7 @@ export class AgentRegistryService {
       role: 'Meeting Orchestration & Action Item Specialist',
       department: 'Meetings',
       description: 'Generates agendas, summarizes meeting recordings/notes, extracts action items, and suggests follow-up syncs.',
-      systemPrompt: 'You are the Meeting Assistant for BlackDesk OS. You manage Meetings, Participant schedules, Project contexts, and CRM contacts. Your goal is to structure high-impact agendas, transcribe/summarize discussions, auto-assign action items to team members, and suggest follow-ups.',
+      systemPrompt: 'You are the Meeting Assistant for Britsync. You manage Meetings, Participant schedules, Project contexts, and CRM contacts. Your goal is to structure high-impact agendas, transcribe/summarize discussions, auto-assign action items to team members, and suggest follow-ups.',
       capabilities: [
         { capability: 'AGENDA_GENERATION', displayName: 'Agenda Generation', description: 'Structure goal-driven meeting agendas with time allocations', enabled: true },
         { capability: 'MEETING_SUMMARIES', displayName: 'Meeting Summaries', description: 'Draft key decisions, discussion topics, and takeaways', enabled: true },
@@ -135,7 +135,7 @@ export class AgentRegistryService {
       role: 'Financial Analytics & Contract Audit Specialist',
       department: 'Finance',
       description: 'Provides revenue summaries, analyzes contracts, compares proposals, and surfaces financial insights.',
-      systemPrompt: 'You are the Finance Assistant for BlackDesk OS. You inspect Contracts, Proposals, Project Budgets, and CRM Opportunities. Your goal is to deliver revenue forecasts, audit contract payment milestones, compare vendor proposal margins, and highlight financial risks.',
+      systemPrompt: 'You are the Finance Assistant for Britsync. You inspect Contracts, Proposals, Project Budgets, and CRM Opportunities. Your goal is to deliver revenue forecasts, audit contract payment milestones, compare vendor proposal margins, and highlight financial risks.',
       capabilities: [
         { capability: 'REVENUE_SUMMARIES', displayName: 'Revenue Summaries', description: 'Compile MRR/ARR growth, contract values, and cash flow forecasts', enabled: true },
         { capability: 'CONTRACT_ANALYSIS', displayName: 'Contract Analysis', description: 'Audit payment terms, renewal clauses, and liability limits', enabled: true },
@@ -161,7 +161,7 @@ export class AgentRegistryService {
       role: 'Executive Intelligence & Organization Health Specialist',
       department: 'Executive',
       description: 'Provides executive dashboard summaries, organization health metrics, KPI summaries, department insights, risk alerts, and weekly briefings.',
-      systemPrompt: 'You are the CEO Executive Assistant for BlackDesk OS. You possess organization-wide access across all departments, CRM, Projects, Finance, Knowledge, Workflows, and Teams. Your mission is to provide high-level briefings, monitor organization health, alert the CEO to strategic risks, and summarize weekly performance.',
+      systemPrompt: 'You are the CEO Executive Assistant for Britsync. You possess organization-wide access across all departments, CRM, Projects, Finance, Knowledge, Workflows, and Teams. Your mission is to provide high-level briefings, monitor organization health, alert the CEO to strategic risks, and summarize weekly performance.',
       capabilities: [
         { capability: 'EXECUTIVE_DASHBOARD_SUMMARIES', displayName: 'Executive Dashboard Summaries', description: 'Synthesize whole-company metrics into C-suite briefings', enabled: true },
         { capability: 'ORGANIZATION_HEALTH', displayName: 'Organization Health', description: 'Evaluate team load, project delivery rates, and sales pipeline health', enabled: true },

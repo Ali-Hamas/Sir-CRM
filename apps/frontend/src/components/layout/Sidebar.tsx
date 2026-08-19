@@ -107,7 +107,7 @@ export function Sidebar({ orgSlug, workspaceId }: { orgSlug: string; workspaceId
           {!collapsed && (
             <div className="min-w-0">
               <span className="font-bold text-sm text-gray-900 dark:text-white tracking-tight block truncate">
-                BlackDesk OS
+                Britsync
               </span>
               <span className="text-[10px] text-gray-400 dark:text-zinc-500 block truncate font-mono uppercase tracking-wider">
                 {workspaceId || orgSlug}

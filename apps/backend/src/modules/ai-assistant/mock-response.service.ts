@@ -43,7 +43,7 @@ export class MockResponseService {
     } else {
       toolsRequested.push('GlobalSearch_ExecuteQuery', 'Memory_FetchUserPreferences');
       memoryUsed.push('General Workspace Context');
-      content = `[Mock AI Assistant — Core Engine]\n\nHello! I am your central BlackDesk AI Assistant. I am currently monitoring all workspace modules including CRM, Projects, Knowledge, Documents, and Workflows.\n\nHow can I help optimize your operations today?`;
+      content = `[Mock AI Assistant — Core Engine]\n\nHello! I am your central Britsync AI Assistant. I am currently monitoring all workspace modules including CRM, Projects, Knowledge, Documents, and Workflows.\n\nHow can I help optimize your operations today?`;
     }
 
     const latencyMs = Math.floor(Math.random() * 120) + 40; // Simulated latency 40-160ms

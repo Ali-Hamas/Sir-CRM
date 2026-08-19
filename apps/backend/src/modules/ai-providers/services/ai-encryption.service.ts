@@ -8,7 +8,7 @@ export class AIEncryptionService {
   // Secret key derived or fallback to consistent secret
   private readonly secretKey = crypto
     .createHash('sha256')
-    .update(process.env.ENCRYPTION_SECRET || 'blackdesk-enterprise-ai-secret-key-2026')
+    .update(process.env.ENCRYPTION_SECRET || 'Britsync-enterprise-ai-secret-key-2026')
     .digest();
 
   encrypt(text: string): string {

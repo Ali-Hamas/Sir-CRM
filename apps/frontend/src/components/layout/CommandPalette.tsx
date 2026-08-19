@@ -350,7 +350,7 @@ export function CommandPalette({
             <span><kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300">↵</kbd> Select</span>
             <span><kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300">ESC</kbd> Close</span>
           </div>
-          <span>BlackDesk Global Search</span>
+          <span>Britsync Global Search</span>
         </div>
       </div>
     </div>

@@ -69,7 +69,7 @@ export default function RegisterPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-300 bg-clip-text text-transparent">
-                  BlackDesk OS
+                  Britsync
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   2026 Enterprise Edition
@@ -132,14 +132,14 @@ export default function RegisterPage() {
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-purple-600 flex items-center justify-center text-white font-black text-xl shadow-lg mx-auto mb-2 glow-indigo">
               B
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-white">BlackDesk OS</h1>
+            <h1 className="text-2xl font-black tracking-tight text-white">Britsync</h1>
             <p className="text-xs text-zinc-400 mt-1">Create your enterprise account</p>
           </div>
 
           {/* Form Header */}
           <div className="space-y-1 text-center lg:text-left">
             <h2 className="text-2xl lg:text-3xl font-black tracking-tight text-white">Create Account</h2>
-            <p className="text-xs text-zinc-400">Get started with your BlackDesk OS workspace today.</p>
+            <p className="text-xs text-zinc-400">Get started with your Britsync workspace today.</p>
           </div>
 
           {/* Deluxe Luminous Glass Form Card */}
@@ -204,7 +204,7 @@ export default function RegisterPage() {
                     <input
                       {...register('email')}
                       type="email"
-                      placeholder="shaheer@company.com"
+                      placeholder="admin@britsync.com"
                       className="block w-full pl-10 pr-4 py-2.5 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50"
                       disabled={isLoading}
                     />

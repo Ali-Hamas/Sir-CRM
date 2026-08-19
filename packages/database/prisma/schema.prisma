@@ -2399,10 +2399,10 @@ model AIUserPreference {
 
 model AIAssistant {
   id              String       @id @default(uuid()) @map("_id")
-  name            String       @default("BlackDesk AI Assistant")
+  name            String       @default("Britsync AI Assistant")
   description     String?      @default("Central Enterprise AI Assistant orchestrating intelligence across all workspace modules.")
   avatar          String?
-  systemPrompt    String?      @default("You are BlackDesk Assistant, an intelligent enterprise AI assistant designed to automate workflows, answer queries across CRM, Projects, Knowledge Base, and Documents, and guide users through enterprise operations.")
+  systemPrompt    String?      @default("You are Britsync Assistant, an intelligent enterprise AI assistant designed to automate workflows, answer queries across CRM, Projects, Knowledge Base, and Documents, and guide users through enterprise operations.")
   defaultProvider String       @default("OPENAI") // OPENAI, ANTHROPIC, GOOGLE, LOCAL
   defaultModel    String       @default("gpt-4o")
   temperature     Float        @default(0.7)

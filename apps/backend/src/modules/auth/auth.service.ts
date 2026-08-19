@@ -33,9 +33,59 @@ export class AuthService {
     const user = await this.usersService.create({
       email: data.email,
       passwordHash: hashedPassword,
-      firstName: data.firstName?.trim() || 'Shaheer',
-      lastName: data.lastName?.trim() || 'Khan',
+      firstName: data.firstName?.trim() || 'User',
+      lastName: data.lastName?.trim() || '',
     });
+
+    // Automatically provision Britsync Workspace for the user to bypass onboarding questions
+    try {
+      const orgName = 'Britsync Workspace';
+      const cleanFirstName = (data.firstName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanLastName = (data.lastName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const randSuffix = Math.random().toString(36).substring(2, 7);
+      const orgSlug = `britsync-${cleanFirstName}${cleanLastName ? '-' + cleanLastName : ''}-${randSuffix}`;
+
+      await this.prisma.$transaction(async (tx) => {
+        const org = await tx.organization.create({
+          data: {
+            name: orgName,
+            slug: orgSlug,
+            industry: 'Technology',
+            companySize: '1-10',
+            createdBy: user.id,
+            updatedBy: user.id,
+          },
+        });
+
+        await tx.organizationMember.create({
+          data: {
+            userId: user.id,
+            organizationId: org.id,
+            role: 'SUPER_ADMIN',
+          },
+        });
+
+        const workspace = await tx.workspace.create({
+          data: {
+            name: 'Default Workspace',
+            description: 'Your default workspace',
+            organizationId: org.id,
+            createdBy: user.id,
+            updatedBy: user.id,
+          },
+        });
+
+        await tx.workspaceMember.create({
+          data: {
+            userId: user.id,
+            workspaceId: workspace.id,
+            role: 'SUPER_ADMIN',
+          },
+        });
+      });
+    } catch (orgError) {
+      console.error('[AUTH] Auto-creating organization failed:', orgError.message);
+    }
 
     return this.generateTokens(user);
   }
@@ -57,7 +107,7 @@ export class AuthService {
           passwordHash: hashedPassword,
           firstName: data.firstName?.trim() || data.email.split('@')[0] || 'User',
           lastName: data.lastName?.trim() || '',
-          role: data.email === 'admin@blackdesk.com' ? 'SUPER_ADMIN' : 'CLIENT',
+          role: data.email === 'admin@Britsync.com' ? 'SUPER_ADMIN' : 'CLIENT',
         }).catch(() => null as any);
       }
 

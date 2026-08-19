@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('[MongoDB Setup] Initializing BlackDesk OS Database setup...');
+  console.log('[MongoDB Setup] Initializing Britsync Database setup...');
   try {
     await prisma.$connect();
     console.log('[MongoDB Setup] Successfully connected to MongoDB via Prisma Client.');

@@ -50,7 +50,7 @@ export default function CreateOrganizationWizard() {
             Create your Organization
           </h1>
           <p className="text-sm text-gray-500 dark:text-zinc-400 mt-2">
-            Let's get your business set up on Blackdesk OS
+            Let's get your business set up on Britsync
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export default function CreateOrganizationWizard() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">Workspace URL (Slug)</label>
                 <div className="flex items-center mt-1">
                   <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-700 px-3 py-2 text-sm text-gray-500">
-                    blackdesk.com/
+                    Britsync.com/
                   </span>
                   <input
                     {...register('slug')}

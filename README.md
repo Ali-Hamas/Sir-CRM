@@ -1,4 +1,4 @@
-# Blackdesk OS
+# Britsync
 
 Enterprise Monorepo built with Next.js 15, NestJS, and Turborepo.
 

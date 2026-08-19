@@ -11,7 +11,7 @@ const MOCK_AI_RESPONSES = [
 ### Key Highlights
 1. **Security & Compliance**: All API operations are strictly scoped per organization role (RBAC).
 2. **Performance**: Streaming architecture ensures ultra-low initial byte latency.
-3. **Integration**: Seamless connectivity with **Blackdesk OS CRM**, **Projects**, and **Workflows**.
+3. **Integration**: Seamless connectivity with **Britsync CRM**, **Projects**, and **Workflows**.
 
 \`\`\`typescript
 // Sample Enterprise AI Helper Function
@@ -71,7 +71,7 @@ export class AIChatService {
         title,
         provider: dto.provider || 'OPENAI',
         model: dto.model || 'gpt-4o',
-        systemPrompt: dto.systemPrompt || 'You are an enterprise AI assistant for Blackdesk OS.',
+        systemPrompt: dto.systemPrompt || 'You are an enterprise AI assistant for Britsync.',
       },
       include: {
         folder: true,

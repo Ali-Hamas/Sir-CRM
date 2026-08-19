@@ -1,5 +1,5 @@
 /**
- * BlackDesk OS - Enterprise Client Demo Seeder
+ * Britsync - Enterprise Client Demo Seeder
  * Populates MongoDB with realistic enterprise demo data across all 29+ modules.
  */
 
@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 async function seedDemoData() {
   console.log('===========================================================');
-  console.log(' BLACKDESK OS — CLIENT DEMO SEEDER');
+  console.log(' Britsync — CLIENT DEMO SEEDER');
   console.log('===========================================================');
 
   try {
@@ -19,10 +19,10 @@ async function seedDemoData() {
     // 1. Seed Enterprise Users
     console.log('[1/6] Seeding Users...');
     const adminUser = await prisma.user.upsert({
-      where: { email: 'admin@blackdesk.com' },
+      where: { email: 'admin@Britsync.com' },
       update: {},
       create: {
-        email: 'admin@blackdesk.com',
+        email: 'admin@Britsync.com',
         passwordHash: hashedPassword,
         firstName: 'Executive',
         lastName: 'Admin',
@@ -33,10 +33,10 @@ async function seedDemoData() {
     });
 
     const demoClient = await prisma.user.upsert({
-      where: { email: 'client@blackdesk.com' },
+      where: { email: 'client@Britsync.com' },
       update: {},
       create: {
-        email: 'client@blackdesk.com',
+        email: 'client@Britsync.com',
         passwordHash: hashedPassword,
         firstName: 'Sarah',
         lastName: 'Connor',
@@ -52,11 +52,11 @@ async function seedDemoData() {
     // 2. Seed Organization & Workspace
     console.log('[2/6] Seeding Organization & Workspace...');
     const org = await prisma.organization.upsert({
-      where: { slug: 'blackdesk-corp' },
+      where: { slug: 'Britsync-corp' },
       update: {},
       create: {
-        name: 'BlackDesk Enterprise AI Corp',
-        slug: 'blackdesk-corp',
+        name: 'Britsync Enterprise AI Corp',
+        slug: 'Britsync-corp',
         industry: 'Enterprise Software & AI',
       },
     });
@@ -117,7 +117,7 @@ async function seedDemoData() {
 
     const opportunity = await prisma.opportunity.create({
       data: {
-        name: 'Acme Global - BlackDesk OS Enterprise Licensing',
+        name: 'Acme Global - Britsync Enterprise Licensing',
         estimatedValue: 250000,
         stage: 'PROPOSAL_SENT',
         probability: 85,
@@ -145,7 +145,7 @@ async function seedDemoData() {
     const proposal = await prisma.proposal.create({
       data: {
         proposalNumber: 'PROP-2026-001',
-        title: 'BlackDesk OS v1.0 Enterprise SLA & Deployment Plan',
+        title: 'Britsync v1.0 Enterprise SLA & Deployment Plan',
         totalValue: 250000,
         status: 'SENT',
         companyId: company.id,
@@ -160,7 +160,7 @@ async function seedDemoData() {
     const contract = await prisma.contract.create({
       data: {
         contractNumber: 'CNT-2026-001',
-        title: 'Master Services Agreement - BlackDesk OS',
+        title: 'Master Services Agreement - Britsync',
         contractValue: 250000,
         status: 'ACTIVE',
         startDate: new Date(),
@@ -187,7 +187,7 @@ async function seedDemoData() {
       data: {
         projectName: 'Enterprise Client Onboarding & Delivery',
         projectCode: 'PRJ-BD-001',
-        description: 'Production rollout of BlackDesk OS v1.0 for client delivery.',
+        description: 'Production rollout of Britsync v1.0 for client delivery.',
         status: 'IN_PROGRESS',
         organizationId: org.id,
         workspaceId: workspace.id,

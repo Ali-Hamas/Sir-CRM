@@ -39,7 +39,7 @@ export class AIAssistantService {
 
     if (!assistant) {
       assistant = await this.createAssistant(userId, orgId, {
-        name: 'BlackDesk AI Assistant',
+        name: 'Britsync AI Assistant',
         description: 'Central Enterprise AI Assistant orchestrating intelligence across all workspace modules.',
         defaultProvider: 'OPENAI',
         defaultModel: 'gpt-4o',
@@ -61,7 +61,7 @@ export class AIAssistantService {
         name: dto.name,
         description: dto.description || null,
         avatar: dto.avatar || null,
-        systemPrompt: dto.systemPrompt || 'You are BlackDesk Assistant, an intelligent enterprise AI assistant designed to automate workflows and guide operations.',
+        systemPrompt: dto.systemPrompt || 'You are Britsync Assistant, an intelligent enterprise AI assistant designed to automate workflows and guide operations.',
         defaultProvider: dto.defaultProvider || 'OPENAI',
         defaultModel: dto.defaultModel || 'gpt-4o',
         temperature: dto.temperature ?? 0.7,

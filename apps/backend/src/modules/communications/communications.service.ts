@@ -262,11 +262,11 @@ export class CommunicationsService {
     });
     if (!provider) throw new NotFoundException('Provider not found');
 
-    const recipient = targetRecipient || 'test@blackdesk.io';
+    const recipient = targetRecipient || 'test@Britsync.io';
     const dto = new SendMessageDto();
     dto.channel = provider.channel;
     dto.subject = `[Test] Communication from ${provider.name}`;
-    dto.body = `This is a test communication sent via Blackdesk OS using provider ${provider.name} (${provider.providerType}).`;
+    dto.body = `This is a test communication sent via Britsync using provider ${provider.name} (${provider.providerType}).`;
     dto.bodyFormat = 'PLAIN_TEXT';
     dto.recipients = [{ address: recipient, name: 'Tester' }];
     dto.providerId = provider.id;

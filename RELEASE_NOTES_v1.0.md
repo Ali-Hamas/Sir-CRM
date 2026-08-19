@@ -1,4 +1,4 @@
-# BlackDesk OS — Release Notes v1.0.0 (Production Release)
+# Britsync — Release Notes v1.0.0 (Production Release)
 
 **Release Date**: August 4, 2026  
 **Version**: `1.0.0`  
@@ -8,7 +8,7 @@
 
 ## 🚀 Overview
 
-BlackDesk OS v1.0.0 is the complete, production-ready enterprise operating system for AI-driven business workflows, CRM pipeline management, project tracking, resource management, document management, and autonomous AI agent orchestration.
+Britsync v1.0.0 is the complete, production-ready enterprise operating system for AI-driven business workflows, CRM pipeline management, project tracking, resource management, document management, and autonomous AI agent orchestration.
 
 ---
 

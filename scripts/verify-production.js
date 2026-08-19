@@ -1,5 +1,5 @@
 /**
- * BlackDesk OS - Complete Production Verification Suite (Phase 9)
+ * Britsync - Complete Production Verification Suite (Phase 9)
  * Checks system readiness across all 28+ required enterprise modules.
  */
 
@@ -41,7 +41,7 @@ const ROOT_DIR = path.join(__dirname, '..');
 
 async function runProductionValidation() {
   console.log('===========================================================');
-  console.log(' BLACKDESK OS — PRODUCTION VALIDATION SUITE (DAY 10)');
+  console.log(' Britsync — PRODUCTION VALIDATION SUITE (DAY 10)');
   console.log('===========================================================');
 
   let totalChecks = 0;

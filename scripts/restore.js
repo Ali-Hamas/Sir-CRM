@@ -1,5 +1,5 @@
 /**
- * BlackDesk OS - Automated MongoDB Restoration Service
+ * Britsync - Automated MongoDB Restoration Service
  * Cross-platform script (Windows/Linux/macOS)
  */
 
@@ -9,11 +9,11 @@ const { execSync } = require('child_process');
 const zlib = require('zlib');
 
 const BACKUP_DIR = path.join(__dirname, '..', 'backups');
-const MONGO_URI = process.env.DATABASE_URL || 'mongodb://shaheerkhanhyd6_db_user:BlackDesk2024!@localhost:27017/BlackDesk';
+const MONGO_URI = process.env.DATABASE_URL || 'mongodb://shaheerkhanhyd6_db_user:Britsync2024!@localhost:27017/Britsync';
 
 async function restoreBackup() {
   console.log('==================================================');
-  console.log('[RESTORE] Starting BlackDesk OS Database Restoration');
+  console.log('[RESTORE] Starting Britsync Database Restoration');
   console.log('==================================================');
 
   if (!fs.existsSync(BACKUP_DIR)) {

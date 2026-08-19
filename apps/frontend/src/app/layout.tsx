@@ -8,7 +8,7 @@ import { SocketProvider } from "../providers/socket-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Blackdesk OS",
+  title: "Britsync",
   description: "Enterprise Monorepo built with Next.js and NestJS",
 };
 

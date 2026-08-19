@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# BlackDesk OS MongoDB Automated Backup Script
+# Britsync MongoDB Automated Backup Script
 set -e
 
 BACKUP_DIR="./backups"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-ARCHIVE_NAME="blackdesk_mongo_${TIMESTAMP}.tar.gz"
+ARCHIVE_NAME="Britsync_mongo_${TIMESTAMP}.tar.gz"
 
 mkdir -p "$BACKUP_DIR"
 
