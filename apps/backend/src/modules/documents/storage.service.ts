@@ -6,8 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  // Using a local folder 'uploads' in the root for mock storage
-  private readonly storagePath = path.join(process.cwd(), '..', '..', 'uploads');
+  private readonly storagePath = process.env.UPLOADS_PATH || path.join(process.cwd(), 'uploads');
 
   constructor() {
     this.ensureStorageDir();
