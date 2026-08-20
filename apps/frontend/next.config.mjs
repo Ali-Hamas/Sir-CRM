@@ -7,7 +7,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: process.env.NEXT_STANDALONE === 'true' ? 'standalone' : undefined,
+  output: 'standalone',
   swcMinify: true,
   transpilePackages: ["@blackdesk/ui"],
   images: {
