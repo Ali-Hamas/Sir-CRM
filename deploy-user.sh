@@ -74,6 +74,8 @@ grep -q "NEXT_PUBLIC_WS_URL" .env.production || echo "NEXT_PUBLIC_WS_URL=https:/
 
 # Copy to required modules
 cp .env.production packages/database/.env
+cp .env.production apps/backend/.env
+cp .env.production apps/frontend/.env
 cp .env.production .env
 
 echo -e "${GREEN}✓ Environment configurations generated for $DOMAIN.${NC}"
