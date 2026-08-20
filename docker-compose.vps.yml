@@ -39,7 +39,7 @@ services:
       - PORT=3001
       - DATABASE_URL=${DATABASE_URL:-mongodb://shaheerkhanhyd6_db_user:BlackDesk2024!@mongodb:27017/BlackDesk?authSource=admin}
     ports:
-      - '127.0.0.1:3001:3001'
+      - '127.0.0.1:5009:3001'
     volumes:
       - uploads_vps_data:/app/uploads
     networks:
@@ -74,7 +74,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
     ports:
-      - '127.0.0.1:3000:3000'
+      - '127.0.0.1:3009:3000'
     networks:
       - britsync-vps-internal
     depends_on:

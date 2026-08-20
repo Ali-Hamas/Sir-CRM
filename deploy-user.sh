@@ -114,7 +114,7 @@ services:
       - PORT=3001
       - DATABASE_URL=${DATABASE_URL:-mongodb://shaheerkhanhyd6_db_user:BlackDesk2024!@mongodb:27017/BlackDesk?authSource=admin}
     ports:
-      - '127.0.0.1:3001:3001'
+      - '127.0.0.1:5009:3001'
     volumes:
       - uploads_vps_data:/app/uploads
     networks:
@@ -149,7 +149,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
     ports:
-      - '127.0.0.1:3000:3000'
+      - '127.0.0.1:3009:3000'
     networks:
       - britsync-vps-internal
     depends_on:
@@ -198,10 +198,10 @@ docker run --rm \
 
 echo -e "\n${GREEN}======================================================================${NC}"
 echo -e "${GREEN} 🎉 Britsync CRM SERVICES STARTED SUCCESSFULLY!${NC}"
-echo -e " Frontend is running locally on: ${BLUE}http://127.0.0.1:3000${NC}"
-echo -e " Backend is running locally on: ${BLUE}http://127.0.0.1:3001${NC}"
+echo -e " Frontend is running locally on: ${BLUE}http://127.0.0.1:3009${NC}"
+echo -e " Backend is running locally on: ${BLUE}http://127.0.0.1:5009${NC}"
 echo -e ""
 echo -e " ${YELLOW}NEXT STEP FOR VPS ADMIN:${NC}"
 echo -e " Configure Nginx on the host VPS to forward your subdomain traffic to"
-echo -e " port 3000 (frontend) and /api requests to port 3001 (backend)."
+echo -e " port 3009 (frontend) and /api requests to port 5009 (backend)."
 echo -e "======================================================================${NC}"
