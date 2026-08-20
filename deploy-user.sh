@@ -61,8 +61,16 @@ fi
 sed -e "s|APP_URL=.*|APP_URL=https://$DOMAIN|g" \
     -e "s|FRONTEND_URL=.*|FRONTEND_URL=https://$DOMAIN|g" \
     -e "s|BACKEND_URL=.*|BACKEND_URL=http://127.0.0.1:5009|g" \
+    -e "s|NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=https://$DOMAIN/api|g" \
+    -e "s|NEXT_PUBLIC_APP_URL=.*|NEXT_PUBLIC_APP_URL=https://$DOMAIN|g" \
+    -e "s|NEXT_PUBLIC_WS_URL=.*|NEXT_PUBLIC_WS_URL=https://$DOMAIN|g" \
     .env.production > .env.production.tmp
 mv .env.production.tmp .env.production
+
+# Append public variables if not already present in the env file
+grep -q "NEXT_PUBLIC_API_URL" .env.production || echo "NEXT_PUBLIC_API_URL=https://$DOMAIN/api" >> .env.production
+grep -q "NEXT_PUBLIC_APP_URL" .env.production || echo "NEXT_PUBLIC_APP_URL=https://$DOMAIN" >> .env.production
+grep -q "NEXT_PUBLIC_WS_URL" .env.production || echo "NEXT_PUBLIC_WS_URL=https://$DOMAIN" >> .env.production
 
 # Copy to required modules
 cp .env.production packages/database/.env
