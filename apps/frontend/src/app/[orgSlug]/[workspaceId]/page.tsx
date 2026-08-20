@@ -71,6 +71,20 @@ export default function WorkspaceDashboardPage() {
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
+  // Real statistics state
+  const [activeProjectsCount, setActiveProjectsCount] = useState<number>(0);
+  const [pendingTasksCount, setPendingTasksCount] = useState<number>(0);
+  const [urgentTasksCount, setUrgentTasksCount] = useState<number>(0);
+  const [meetingsTodayCount, setMeetingsTodayCount] = useState<number>(0);
+  const [nextMeetingTime, setNextMeetingTime] = useState<string>('None');
+  const [documentsCount, setDocumentsCount] = useState<number>(0);
+  const [storageUsed, setStorageUsed] = useState<string>('0 MB');
+
+  // Real data lists
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [meetings, setMeetings] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+
   useEffect(() => {
     if (!orgSlug) return;
     setLoadingStats(true);
@@ -80,11 +94,52 @@ export default function WorkspaceDashboardPage() {
       workspaceId
         ? apiFetch(`/organizations/${orgSlug}/workspaces/${workspaceId}`).catch(() => null)
         : Promise.resolve(null),
+      apiFetch(`/organizations/${orgSlug}/projects?workspaceId=${workspaceId}`).catch(() => []),
+      apiFetch(`/organizations/${orgSlug}/tasks?workspaceId=${workspaceId}`).catch(() => []),
+      apiFetch(`/organizations/${orgSlug}/meetings`).catch(() => []),
+      apiFetch(`/organizations/${orgSlug}/documents?workspaceId=${workspaceId}`).catch(() => []),
     ])
-      .then(([membersData, wsData]) => {
+      .then(([membersData, wsData, projectsData, tasksData, meetingsData, docsData]) => {
         setMemberCount(membersData?.total ?? 0);
         if (wsData?.name) setWorkspaceName(wsData.name);
+
+        // Normalize data arrays
+        const projectsList = Array.isArray(projectsData) ? projectsData : (projectsData?.data ?? []);
+        const tasksList = Array.isArray(tasksData) ? tasksData : (tasksData?.data ?? []);
+        const meetingsList = Array.isArray(meetingsData) ? meetingsData : (meetingsData?.data ?? []);
+        const docsList = Array.isArray(docsData) ? docsData : (docsData?.data ?? []);
+
+        // Filter and set Projects
+        const activeProj = projectsList.filter((p: any) => p.status === 'ACTIVE' || p.status === 'IN_PROGRESS' || p.status === 'ON_TRACK');
+        setActiveProjectsCount(activeProj.length || projectsList.length);
+        setProjects(projectsList.slice(0, 3));
+
+        // Filter and set Tasks
+        const pendingTasks = tasksList.filter((t: any) => t.status !== 'DONE');
+        const urgentTasks = pendingTasks.filter((t: any) => t.priority === 'URGENT');
+        setPendingTasksCount(pendingTasks.length);
+        setUrgentTasksCount(urgentTasks.length);
+        setTasks(pendingTasks.slice(0, 3));
+
+        // Filter and set Meetings
+        setMeetingsTodayCount(meetingsList.length);
+        setMeetings(meetingsList.slice(0, 3));
+        if (meetingsList.length > 0) {
+          setNextMeetingTime(meetingsList[0].time || meetingsList[0].title || 'Scheduled');
+        } else {
+          setNextMeetingTime('None');
+        }
+
+        // Count Documents & Size
+        setDocumentsCount(docsList.length);
+        let size = 0;
+        docsList.forEach((d: any) => {
+          size += d.size || 0;
+        });
+        const mb = (size / (1024 * 1024)).toFixed(1);
+        setStorageUsed(`${mb} MB`);
       })
+      .catch((err) => console.error('Failed to load dashboard statistics', err))
       .finally(() => setLoadingStats(false));
   }, [orgSlug, workspaceId]);
 
@@ -96,23 +151,6 @@ export default function WorkspaceDashboardPage() {
     { label: 'Time Tracking', href: `/${orgSlug}/projects/time-tracking`, icon: Clock, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50' },
     { label: 'Document Vault', href: `/${orgSlug}/documents`, icon: FileText, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50' },
     { label: 'AI Assistant', href: `/${orgSlug}/ai/assistant`, icon: Bot, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50' },
-  ];
-
-  const mockTasks = [
-    { id: '1', title: 'Review Q3 Enterprise Contract & Security SLA', priority: 'URGENT', due: 'Today', dept: 'Engineering', status: 'In Progress' },
-    { id: '2', title: 'Finalize Workspace Department Allocations', priority: 'HIGH', due: 'Tomorrow', dept: 'Operations', status: 'Pending' },
-    { id: '3', title: 'Update Client Onboarding Knowledge Article', priority: 'MEDIUM', due: 'Aug 18', dept: 'Product', status: 'Scheduled' },
-  ];
-
-  const mockMeetings = [
-    { id: 'm1', title: 'Enterprise Architecture & Security Sync', time: '3:00 PM - 3:45 PM', attendees: ['SK', 'JD', 'AL'], link: '#' },
-    { id: 'm2', title: 'Q3 Product Roadmap Review', time: '5:30 PM - 6:00 PM', attendees: ['SK', 'MS'], link: '#' },
-  ];
-
-  const mockProjects = [
-    { name: 'Enterprise SaaS Rebrand', dept: 'Design & Product', progress: 85, health: 'ON TRACK', color: 'bg-indigo-600' },
-    { name: 'AI Assistant RAG Integration', dept: 'AI Engineering', progress: 62, health: 'ON TRACK', color: 'bg-purple-600' },
-    { name: 'Q3 Financial Operations Audit', dept: 'Finance', progress: 40, health: 'AT RISK', color: 'bg-amber-600' },
   ];
 
   return (
@@ -168,43 +206,39 @@ export default function WorkspaceDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Active Projects"
-          value="12 Active"
-          subtext="3 completing this week"
+          value={`${activeProjectsCount} Active`}
+          subtext="Projects in progress"
           icon={FolderKanban}
           color="bg-indigo-600"
           badge="Portfolio"
-          trend="+18.4% MoM"
-          loading={false}
+          loading={loadingStats}
         />
         <KpiCard
           title="Assigned Tasks"
-          value="8 Pending"
-          subtext="2 marked urgent"
+          value={`${pendingTasksCount} Pending`}
+          subtext={`${urgentTasksCount} marked urgent`}
           icon={CheckSquare}
           color="bg-blue-600"
           badge="Actionable"
-          trend="2 Urgent"
-          loading={false}
+          loading={loadingStats}
         />
         <KpiCard
           title="Scheduled Meetings"
-          value="3 Today"
-          subtext="Next meeting at 3:00 PM"
+          value={`${meetingsTodayCount} Today`}
+          subtext={`Next: ${nextMeetingTime}`}
           icon={Calendar}
           color="bg-purple-600"
           badge="Sync Ready"
-          trend="Next: 3:00 PM"
-          loading={false}
+          loading={loadingStats}
         />
         <KpiCard
           title="Vault Storage"
-          value="1.4 GB"
-          subtext="64 documents stored"
+          value={storageUsed}
+          subtext={`${documentsCount} documents stored`}
           icon={FileText}
           color="bg-emerald-600"
           badge="Encrypted"
-          trend="Secure RAG"
-          loading={false}
+          loading={loadingStats}
         />
       </div>
 
@@ -244,31 +278,42 @@ export default function WorkspaceDashboardPage() {
             </div>
 
             <div className="space-y-3">
-              {mockTasks.map((t) => (
-                <div key={t.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white/50 dark:bg-zinc-950/60 border border-gray-100 dark:border-zinc-800/80 hover:border-primary/40 transition-all shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-md border border-gray-300 dark:border-zinc-700 flex items-center justify-center text-transparent hover:text-primary hover:border-primary cursor-pointer transition-colors">
-                      <CheckCircle2 size={14} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{t.title}</p>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400">
-                          {t.dept}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-0.5">Due {t.due} · {t.status}</p>
-                    </div>
-                  </div>
-                  <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-md ${
-                    t.priority === 'URGENT' ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/60' :
-                    t.priority === 'HIGH' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60' :
-                    'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60'
-                  }`}>
-                    {t.priority}
-                  </span>
+              {tasks.length === 0 ? (
+                <div className="text-center py-8 text-xs text-gray-500 dark:text-zinc-500 bg-white/30 dark:bg-zinc-950/20 rounded-xl border border-dashed border-gray-200 dark:border-zinc-800">
+                  <CheckSquare className="mx-auto mb-2 text-gray-400 dark:text-zinc-600" size={24} />
+                  No pending tasks assigned to you.
                 </div>
-              ))}
+              ) : (
+                tasks.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white/50 dark:bg-zinc-950/60 border border-gray-100 dark:border-zinc-800/80 hover:border-primary/40 transition-all shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-md border border-gray-300 dark:border-zinc-700 flex items-center justify-center text-transparent hover:text-primary hover:border-primary cursor-pointer transition-colors">
+                        <CheckCircle2 size={14} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{t.title}</p>
+                          {t.dept && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400">
+                              {t.dept}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 dark:text-zinc-500 mt-0.5">Due {t.due || 'No date'} · {t.status}</p>
+                      </div>
+                    </div>
+                    {t.priority && (
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-md ${
+                        t.priority === 'URGENT' ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/60' :
+                        t.priority === 'HIGH' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60' :
+                        'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/60'
+                      }`}>
+                        {t.priority}
+                      </span>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -285,32 +330,33 @@ export default function WorkspaceDashboardPage() {
             </div>
 
             <div className="space-y-3">
-              {mockMeetings.map((m) => (
-                <div key={m.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white/50 dark:bg-zinc-950/60 border border-gray-100 dark:border-zinc-800/80 hover:border-purple-500/40 transition-all shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                      <Video size={16} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-gray-900 dark:text-white">{m.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-gray-400 dark:text-zinc-500">{m.time}</span>
-                        <span className="text-[10px] text-gray-300 dark:text-zinc-700">•</span>
-                        <div className="flex -space-x-1 overflow-hidden">
-                          {m.attendees.map((att, idx) => (
-                            <div key={idx} className="inline-block h-4 w-4 rounded-full bg-primary/20 text-primary border border-white dark:border-zinc-900 text-[8px] font-bold text-center leading-4">
-                              {att}
-                            </div>
-                          ))}
+              {meetings.length === 0 ? (
+                <div className="text-center py-8 text-xs text-gray-500 dark:text-zinc-500 bg-white/30 dark:bg-zinc-950/20 rounded-xl border border-dashed border-gray-200 dark:border-zinc-800">
+                  <Calendar className="mx-auto mb-2 text-purple-400 dark:text-purple-600" size={24} />
+                  No scheduled meetings today.
+                </div>
+              ) : (
+                meetings.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white/50 dark:bg-zinc-950/60 border border-gray-100 dark:border-zinc-800/80 hover:border-purple-500/40 transition-all shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        <Video size={16} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">{m.title}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-gray-400 dark:text-zinc-500">{m.time || 'Scheduled'}</span>
                         </div>
                       </div>
                     </div>
+                    {m.link && (
+                      <a href={m.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-colors">
+                        Join Call <ExternalLink size={11} />
+                      </a>
+                    )}
                   </div>
-                  <button className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold shadow-sm transition-colors">
-                    Join Call <ExternalLink size={11} />
-                  </button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -327,26 +373,32 @@ export default function WorkspaceDashboardPage() {
             </div>
 
             <div className="space-y-4">
-              {mockProjects.map((p) => (
-                <div key={p.name} className="space-y-2 p-3.5 rounded-xl bg-white/50 dark:bg-zinc-950/40 border border-gray-100 dark:border-zinc-800/60 shadow-xs">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-gray-900 dark:text-white">{p.name}</span>
-                    <span className="font-extrabold text-gray-700 dark:text-zinc-300">{p.progress}%</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-zinc-800 overflow-hidden">
-                    <div className={`h-full ${p.color} transition-all duration-500 rounded-full`} style={{ width: `${p.progress}%` }} />
-                  </div>
-                  <div className="flex justify-between items-center text-[10px]">
-                    <span className="text-gray-500 dark:text-zinc-500">Department: {p.dept}</span>
-                    <span className={`font-bold px-2 py-0.5 rounded ${
-                      p.health === 'ON TRACK' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400' :
-                      'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400'
-                    }`}>
-                      {p.health}
-                    </span>
-                  </div>
+              {projects.length === 0 ? (
+                <div className="text-center py-8 text-xs text-gray-500 dark:text-zinc-500 bg-white/30 dark:bg-zinc-950/20 rounded-xl border border-dashed border-gray-200 dark:border-zinc-800">
+                  <FolderKanban className="mx-auto mb-2 text-indigo-400 dark:text-indigo-600" size={24} />
+                  No active projects in this workspace.
                 </div>
-              ))}
+              ) : (
+                projects.map((p) => (
+                  <div key={p.id || p.name} className="space-y-2 p-3.5 rounded-xl bg-white/50 dark:bg-zinc-950/40 border border-gray-100 dark:border-zinc-800/60 shadow-xs">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-gray-900 dark:text-white">{p.name}</span>
+                      <span className="font-extrabold text-gray-700 dark:text-zinc-300">{p.progress ?? 0}%</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-zinc-800 overflow-hidden">
+                      <div className="h-full bg-indigo-600 transition-all duration-500 rounded-full" style={{ width: `${p.progress ?? 0}%` }} />
+                    </div>
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="text-gray-500 dark:text-zinc-500">Status: {p.status}</span>
+                      {p.priority && (
+                        <span className="font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
+                          {p.priority}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
