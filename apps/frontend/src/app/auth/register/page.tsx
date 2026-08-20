@@ -164,7 +164,7 @@ export default function RegisterPage() {
                       <input
                         {...register('firstName')}
                         type="text"
-                        placeholder="Shaheer"
+                        placeholder="John"
                         className="block w-full pl-10 pr-3 py-2.5 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50"
                         disabled={isLoading}
                       />
@@ -183,7 +183,7 @@ export default function RegisterPage() {
                       <input
                         {...register('lastName')}
                         type="text"
-                        placeholder="Khan"
+                        placeholder="Doe"
                         className="block w-full pl-10 pr-3 py-2.5 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 transition-all focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary disabled:opacity-50"
                         disabled={isLoading}
                       />

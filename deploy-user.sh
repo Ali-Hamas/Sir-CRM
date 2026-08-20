@@ -60,7 +60,7 @@ fi
 # Update Domain URLs in .env.production
 sed -e "s|APP_URL=.*|APP_URL=https://$DOMAIN|g" \
     -e "s|FRONTEND_URL=.*|FRONTEND_URL=https://$DOMAIN|g" \
-    -e "s|BACKEND_URL=.*|BACKEND_URL=https://$DOMAIN/api|g" \
+    -e "s|BACKEND_URL=.*|BACKEND_URL=http://127.0.0.1:5009|g" \
     .env.production > .env.production.tmp
 mv .env.production.tmp .env.production
 
